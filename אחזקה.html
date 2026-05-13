@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>מערכת אחזקה</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            /* Premium Color Palette */
+            --blue-light: #eff6ff; --blue-main: #3b82f6; --blue-dark: #2563eb;
+            --orange-light: #fff7ed; --orange-main: #f97316; --orange-dark: #ea580c;
+            --purple-light: #faf5ff; --purple-main: #8b5cf6; --purple-dark: #7c3aed;
+            --green-light: #f0fdf4; --green-main: #22c55e; --green-dark: #16a34a;
+            --red-light: #fef2f2; --red-main: #ef4444; --red-dark: #dc2626;
+            
+            --bg-app: #f4f7fb; 
+            --surface: #ffffff;
+            --border: rgba(226, 232, 240, 0.8);
+            --text-strong: #0f172a; 
+            --text-muted: #64748b;
+            
+            /* Modern Shadows */
+            --shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.04);
+            --shadow-card: 0 8px 24px -4px rgba(15, 23, 42, 0.06), 0 4px 10px -4px rgba(15, 23, 42, 0.04);
+            --shadow-hover: 0 12px 32px -4px rgba(15, 23, 42, 0.1);
+            --shadow-glow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+            
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        html, body { height: 100%; }
+        body { 
+            font-family: 'Heebo', sans-serif; 
+            background: var(--bg-app); 
+            color: var(--text-strong); 
+            direction: rtl; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        #root { min-height: 100%; display: flex; flex-direction: column; }
+
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ===== LAYOUT ===== */
+        .app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+
+        .app-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 20px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            position: sticky; top: 0; z-index: 50;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .main-area { display: flex; flex: 1; }
+
+        /* Desktop sidebar */
+        .sidebar {
+            width: 240px; flex-shrink: 0;
+            background: var(--surface); 
+            border-left: 1px solid var(--border);
+            padding: 24px 14px; 
+            display: flex; flex-direction: column; gap: 6px;
+            position: sticky; top: 65px; height: calc(100vh - 65px);
+            overflow-y: auto;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.02);
+        }
+
+        .content-area { flex: 1; padding: 32px 40px; overflow-x: hidden; }
+
+        /* Mobile bottom nav */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex; padding-bottom: var(--safe-bottom);
+            z-index: 100; box-shadow: 0 -4px 30px rgba(0,0,0,0.06);
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .content-area { padding: 20px; padding-bottom: calc(90px + var(--safe-bottom)); }
+            .app-header { padding: 12px 16px; }
+        }
+
+        @media (min-width: 769px) {
+            .bottom-nav { display: none; }
+        }
+
+        /* ===== NAV ITEMS ===== */
+        .nav-item {
+            border: none; background: transparent; cursor: pointer;
+            font-family: 'Heebo', sans-serif; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center;
+        }
+
+        /* Mobile nav item */
+        @media (max-width: 768px) {
+            .nav-item { flex: 1; flex-direction: column; justify-content: center; gap: 4px; padding: 10px 4px; }
+            .nav-item.active { transform: translateY(-2px); }
+            .nav-label { font-size: 11px; font-weight: 600; }
+        }
+
+        /* Desktop nav item */
+        @media (min-width: 769px) {
+            .nav-item { flex-direction: row; gap: 12px; padding: 12px 16px; border-radius: 14px; width: 100%; position: relative; overflow: hidden; }
+            .nav-item:hover { background: #f8fafc; transform: translateX(-4px); }
+            .nav-item.active { background: var(--nav-active-bg, #eff6ff); }
+            .nav-item.active::before { content: ''; position: absolute; right: 0; top: 15%; height: 70%; width: 4px; background: currentColor; border-radius: 4px 0 0 4px; }
+            .nav-label { font-size: 15px; font-weight: 600; }
+        }
+
+        .nav-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; transition: all 0.2s; }
+
+        /* ===== INPUTS ===== */
+        .input {
+            width: 100%; border: 1px solid #cbd5e1; border-radius: 14px;
+            padding: 14px 16px; font-size: 15px; font-family: 'Heebo', sans-serif;
+            outline: none; background: var(--surface); color: var(--text-strong);
+            transition: all 0.2s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
+        }
+        .input:hover { border-color: #94a3b8; }
+        .input:focus { border-color: var(--blue-main); box-shadow: var(--shadow-glow); background: #ffffff; }
+
+        /* ===== BUTTONS ===== */
+        .btn { 
+            border: none; border-radius: 14px; font-family: 'Heebo', sans-serif; 
+            font-weight: 700; cursor: pointer; display: flex; align-items: center; 
+            justify-content: center; gap: 8px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            font-size: 15px; padding: 12px 24px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+        .btn:active { transform: translateY(0) scale(0.98); box-shadow: none; }
+        
+        .btn-blue { background: linear-gradient(135deg, var(--blue-main), var(--blue-dark)); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .btn-orange { background: linear-gradient(135deg, var(--orange-main), var(--orange-dark)); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .btn-green { background: linear-gradient(135deg, var(--green-main), var(--green-dark)); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+        /* ===== BADGES ===== */
+        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
+        .badge-dot { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 4px currentColor; }
+
+        /* ===== CARDS & LISTS ===== */
+        .ticket-card { 
+            background: var(--surface); border-radius: 18px; border: 1px solid #f1f5f9; 
+            padding: 18px; transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        .ticket-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-3px); border-color: #e2e8f0; }
+
+        .ticket-list-item {
+            background: var(--surface); border-radius: 14px; border: 1px solid #e2e8f0;
+            padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+            transition: all 0.2s ease; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            position: relative; overflow: hidden;
+        }
+        .ticket-list-item:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); border-color: #cbd5e1; background: #f8fafc; }
+        .ticket-list-item::before { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 4px; background: var(--status-color, transparent); }
+
+        @media (max-width: 600px) {
+            .ticket-list-item { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px; }
+            .ticket-list-item-right, .ticket-list-item-left { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+            .ticket-list-item-center { width: 100%; margin: 4px 0; }
+        }
+        @media (min-width: 601px) {
+            .ticket-list-item-right { display: flex; align-items: center; gap: 12px; width: 120px; flex-shrink: 0; }
+            .ticket-list-item-center { flex: 1; min-width: 0; }
+            .ticket-list-item-left { display: flex; alignItems: 'center'; gap: 12px; flex-shrink: 0; }
+        }
+
+        /* ===== GRID ===== */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .tickets-grid { display: flex; flex-direction: column; gap: 10px; }
+
+        @media (min-width: 769px) {
+            .stat-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        }
+        @media (min-width: 1024px) {
+            /* .tickets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } - removed grid for list view consistency */
+        }
+
+        .stat-card { 
+            border-radius: 20px; padding: 20px; display: flex; align-items: center; gap: 14px; 
+            background: var(--surface); box-shadow: var(--shadow-sm); transition: transform 0.2s;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card); }
+        .stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+        /* ===== MODAL ===== */
+        .modal-bg { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 200; display: flex; animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-sheet { background: var(--surface); overflow-y: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); }
+        .modal-handle { width: 40px; height: 5px; border-radius: 3px; background: #cbd5e1; margin: 12px auto 0; }
+
+        @media (max-width: 768px) {
+            .modal-bg { align-items: flex-end; }
+            .modal-sheet { width: 100%; max-height: 90vh; border-radius: 28px 28px 0 0; animation: slideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); padding-bottom: 24px; }
+            @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        }
+        @media (min-width: 769px) {
+            .modal-bg { align-items: center; justify-content: center; padding: 24px; }
+            .modal-sheet { max-width: 650px; width: 100%; max-height: 85vh; border-radius: 24px; padding-bottom: 24px; animation: popIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+            .modal-handle { display: none; }
+            @keyframes popIn { from { transform: scale(0.92) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+        }
+
+        .priority-btn { flex: 1; padding: 12px 6px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); font-family: 'Heebo', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .priority-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        
+        .tag-btn { padding: 8px 16px; border-radius: 20px; border: 1.5px solid; font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .tag-btn:hover { transform: scale(1.05); }
+
+        @keyframes pulse { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.5; transform:scale(0.8);} }
+        .pulse { animation: pulse 2s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 0.8s linear infinite; }
+
+        /* ===== LOGIN PAGE ===== */
+        .login-page { 
+            min-height: 100vh; 
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+                #f8fafc;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; 
+        }
+        .login-box { 
+            width: 100%; max-width: 420px; 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 28px; padding: 40px 32px; 
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05); 
+            border: 1px solid rgba(255,255,255,0.6); 
+        }
+
+        .sidebar-label { font-size: 11px; font-weight: 800; color: #94a3b8; padding: 4px 16px 8px; text-transform: uppercase; letter-spacing: 1.2px; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwB9n9tXxHsV7pnFSUOzO8Pv39qeVm0huAqn2ar--TPY6eR7rGA5totXdlDRUE7aD-BDw/exec';
+    const AVAILABLE_TAGS = ['בטיחות', 'הוזמן חלק', 'ממתין לספק', 'חשמל', 'מכניקה', 'צנרת'];
+    const STORAGE_KEY = 'maintenance_user';
+
+    const Icon = ({ name, style, className }) => <i className={`fas fa-${name} ${className||''}`} style={style}></i>;
+    const generateId = () => 'TKT-' + Math.floor(1000 + Math.random() * 9000);
+
+    const ROLE_COLORS = {
+        requester: { color: 'var(--blue-dark)', bg: 'var(--blue-light)', label: 'עובד ייצור' },
+        worker:    { color: 'var(--orange-dark)', bg: 'var(--orange-light)', label: 'איש אחזקה' },
+        manager:   { color: 'var(--purple-dark)', bg: 'var(--purple-light)', label: 'מנהל' },
+    };
+
+    function StatusBadge({ status }) {
+        const map = { 
+            'פתוחה': ['var(--red-light)', 'var(--red-dark)', 'var(--red-main)'], 
+            'בטיפול': ['var(--orange-light)', 'var(--orange-dark)', 'var(--orange-main)'], 
+            'טופלה': ['var(--green-light)', 'var(--green-dark)', 'var(--green-main)'] 
+        };
+        const [bg, color, dot] = map[status] || map['פתוחה'];
+        return <span className="badge" style={{ background: bg, color }}><span className="badge-dot" style={{ background: dot }}></span>{status}</span>;
+    }
+
+    function PriorityBadge({ priority, minimal = false }) {
+        const map = { 
+            'דחופה': ['var(--red-light)', 'var(--red-dark)', 'exclamation-circle'], 
+            'רגילה': ['var(--blue-light)', 'var(--blue-dark)', 'minus-circle'], 
+            'נמוכה': ['#f1f5f9', '#475569', 'arrow-circle-down'] 
+        };
+        const [bg, color, icon] = map[priority] || map['רגילה'];
+        if (minimal) return <span style={{ color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: '50%', background: bg }} title={`עדיפות: ${priority}`}><Icon name={icon} style={{ fontSize: 14 }} /></span>;
+        return <span className="badge" style={{ background: bg, color }}><Icon name={icon} />{priority}</span>;
+    }
+
+    // ===== LOGIN =====
+    function LoginPage({ onLogin }) {
+        const [username, setUsername] = useState('');
+        const [password, setPassword] = useState('');
+        const [loading, setLoading] = useState(false);
+        const [error, setError] = useState('');
+        const [showPass, setShowPass] = useState(false);
+
+        const handleLogin = async () => {
+            if (!username.trim() || !password.trim()) { setError('יש למלא שם משתמש וסיסמה'); return; }
+            setLoading(true); setError('');
+            try {
+                const res = await fetch(`${API_URL}?action=login&username=${encodeURIComponent(username.trim())}&password=${encodeURIComponent(password.trim())}`);
+                const data = await res.json();
+                if (data.success) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user)); onLogin(data.user); }
+                else setError('שם משתמש או סיסמה שגויים');
+            } catch { setError('שם משתמש או סיסמה שגויים'); }
+            setLoading(false);
+        };
+
+        return (
+            <div className="login-page">
+                <div style={{ textAlign: 'center', marginBottom: 36 }}>
+                    <div style={{ width: 80, height: 80, borderRadius: 24, background: 'linear-gradient(135deg, var(--blue-main), var(--blue-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 12px 32px rgba(37, 99, 235, 0.3)' }}>
+                        <Icon name="wrench" style={{ color: 'white', fontSize: 32 }} />
+                    </div>
+                    <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>מערכת אחזקה</h1>
+                    <p style={{ color: 'var(--text-muted)', marginTop: 8, fontSize: 16, fontWeight: 500 }}>התחברות למערכת</p>
+                </div>
+                <div className="login-box">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, paddingRight: 4 }}>שם משתמש</label>
+                            <div style={{ position: 'relative' }}>
+                                <Icon name="user" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 16 }} />
+                                <input className="input" type="text" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => e.key==='Enter'&&handleLogin()} placeholder="הכנס שם משתמש" style={{ paddingRight: 44 }} autoComplete="username" />
+                            </div>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, paddingRight: 4 }}>סיסמה</label>
+                            <div style={{ position: 'relative' }}>
+                                <Icon name="lock" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 16 }} />
+                                <input className="input" type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==='Enter'&&handleLogin()} placeholder="הכנס סיסמה" style={{ paddingRight: 44, paddingLeft: 44 }} autoComplete="current-password" />
+                                <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: 16, transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--text-strong)'} onMouseLeave={e => e.target.style.color = '#94a3b8'}>
+                                    <Icon name={showPass ? 'eye-slash' : 'eye'} />
+                                </button>
+                            </div>
+                        </div>
+                        {error && <div style={{ background: 'var(--red-light)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12, padding: '12px 16px', color: 'var(--red-dark)', fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 10 }}><Icon name="exclamation-circle" /> {error}</div>}
+                        <button className="btn btn-blue" style={{ width: '100%', padding: '16px', fontSize: 18, marginTop: 8 }} onClick={handleLogin} disabled={loading}>
+                            {loading ? <><Icon name="spinner" className="spinner" /> מתחבר...</> : <><Icon name="sign-in-alt" /> כניסה למערכת</>}
+                        </button>
+                    </div>
+                </div>
+                <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 32, fontWeight: 500 }}>לא זוכר סיסמה? פנה למנהל המערכת</p>
+            </div>
+        );
+    }
+
+    // ===== MAIN APP =====
+    function App() {
+        const [currentUser, setCurrentUser] = useState(null);
+        const [authChecked, setAuthChecked] = useState(false);
+        const [tickets, setTickets] = useState([]);
+        const [syncStatus, setSyncStatus] = useState('מחובר');
+        const [activeTab, setActiveTab] = useState(null);
+
+        useEffect(() => {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) { try { setCurrentUser(JSON.parse(saved)); } catch { localStorage.removeItem(STORAGE_KEY); } }
+            setAuthChecked(true);
+        }, []);
+
+        useEffect(() => {
+            if (currentUser) {
+                loadTickets();
+                if (currentUser.role === 'requester') setActiveTab('my');
+                else if (currentUser.role === 'worker') setActiveTab('tasks');
+                else setActiveTab('dashboard');
+            }
+        }, [currentUser]);
+
+        const sortTicketsList = (list) => {
+            return [...list].sort((a, b) => {
+                // קריאות דחופות יקפצו לראש הרשימה
+                if (a.priority === 'דחופה' && b.priority !== 'דחופה') return -1;
+                if (a.priority !== 'דחופה' && b.priority === 'דחופה') return 1;
+                
+                // כל שאר הקריאות - מיון עולה (ישנות למעלה, חדשות בתחתית הרשימה)
+                return new Date(a.date) - new Date(b.date);
+            });
+        };
+
+        const loadTickets = async () => {
+            setSyncStatus('טוען...');
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                if (!data.error) { setTickets(sortTicketsList(data)); setSyncStatus('מעודכן'); }
+                else setSyncStatus('שגיאה');
+            } catch { setSyncStatus('שגיאת חיבור'); }
+        };
+
+        const syncToSheet = async (action, ticket) => {
+            setSyncStatus('מסנכרן...');
+            try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, ticket }), headers: { "Content-Type": "text/plain;charset=utf-8" }, mode: 'no-cors' }); setSyncStatus('מעודכן'); }
+            catch { setSyncStatus('שגיאת סנכרון'); }
+        };
+
+        const handleAdd = (t) => { const ticket = { ...t, id: generateId(), status: 'פתוחה', date: new Date().toISOString().split('T')[0], tags: [], managerNotes: [], openedBy: currentUser.username, openedByName: currentUser.name }; setTickets(sortTicketsList([...tickets, ticket])); syncToSheet('ADD', ticket); };
+        const handleEdit = (id, data) => { const updated = tickets.map(t => t.id === id ? { ...t, ...data } : t); setTickets(sortTicketsList(updated)); syncToSheet('UPDATE', updated.find(t => t.id === id)); };
+        const handleDelete = (id) => { setTickets(tickets.filter(t => t.id !== id)); syncToSheet('DELETE', { id }); };
+        const updateStatus = (id, status, extraData = {}) => { const updated = tickets.map(t => t.id === id ? { ...t, status, ...extraData } : t); setTickets(sortTicketsList(updated)); syncToSheet('UPDATE', updated.find(t => t.id === id)); };
+        const addNote = (id, text) => { const note = { id: Date.now(), text, date: new Date().toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' }), by: currentUser.name }; const updated = tickets.map(t => t.id === id ? { ...t, managerNotes: [...(t.managerNotes||[]), note] } : t); setTickets(sortTicketsList(updated)); syncToSheet('UPDATE', updated.find(t => t.id === id)); };
+        const toggleTag = (id, tag) => { const updated = tickets.map(t => { if (t.id !== id) return t; const curr = t.tags||[]; return { ...t, tags: curr.includes(tag)?curr.filter(g=>g!==tag):[...curr,tag] }; }); setTickets(sortTicketsList(updated)); syncToSheet('UPDATE', updated.find(t => t.id === id)); };
+        const handleLogout = () => { localStorage.removeItem(STORAGE_KEY); setCurrentUser(null); setTickets([]); };
+
+        if (!authChecked) return null;
+        if (!currentUser) return <LoginPage onLogin={u => setCurrentUser(u)} />;
+
+        const isSynced = syncStatus === 'מעודכן' || syncStatus === 'מחובר';
+        const rc = ROLE_COLORS[currentUser.role] || ROLE_COLORS.requester;
+        const myTickets = tickets.filter(t => t.openedBy === currentUser.username);
+        const activeTickets = tickets.filter(t => t.status !== 'טופלה');
+
+        const tabsConfig = {
+            requester: [{ id: 'new', icon: 'plus-circle', label: 'קריאה חדשה' }, { id: 'my', icon: 'list', label: `הקריאות שלי (${myTickets.length})` }],
+            worker:    [{ id: 'tasks', icon: 'tools', label: `משימות (${activeTickets.length})` }, { id: 'done', icon: 'history', label: 'היסטוריה' }],
+            manager:   [{ id: 'dashboard', icon: 'chart-bar', label: 'דשבורד' }, { id: 'all', icon: 'list', label: 'כל הקריאות' }, { id: 'users', icon: 'users', label: 'משתמשים' }],
+        };
+        const roleTabs = tabsConfig[currentUser.role] || [];
+
+        const NavItems = () => roleTabs.map(tab => (
+            <button key={tab.id} className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
+                style={{ '--nav-active-bg': rc.bg, color: activeTab === tab.id ? rc.color : 'var(--text-muted)' }} onClick={() => setActiveTab(tab.id)}>
+                <div className="nav-icon" style={{ background: activeTab === tab.id ? 'white' : 'transparent', boxShadow: activeTab === tab.id ? '0 2px 6px rgba(0,0,0,0.05)' : 'none' }}>
+                    <Icon name={tab.icon} style={{ color: activeTab === tab.id ? rc.color : '#94a3b8' }} />
+                </div>
+                <span className="nav-label">{tab.label}</span>
+            </button>
+        ));
+
+        return (
+            <div className="app-shell">
+                {/* Header */}
+                <div className="app-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 12, background: `linear-gradient(135deg, ${rc.color}, ${rc.color}dd)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${rc.color}40` }}>
+                            <Icon name="wrench" style={{ color: 'white', fontSize: 16 }} />
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: 18, lineHeight: 1.1, letterSpacing: '-0.3px' }}>מערכת אחזקה</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                <span className={isSynced ? '' : 'pulse'} style={{ width: 8, height: 8, borderRadius: '50%', background: isSynced ? 'var(--green-main)' : 'var(--orange-main)', display: 'inline-block' }}></span>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{syncStatus}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: rc.bg, borderRadius: 24, padding: '4px 14px 4px 6px', border: `1px solid ${rc.color}30` }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: rc.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'white', boxShadow: `0 2px 6px ${rc.color}60` }}>{currentUser.name?.charAt(0)||'?'}</div>
+                            <div style={{ display: 'none', '@media(minWidth: 600px)': {display: 'block'} }}>
+                                <div style={{ fontSize: 13, fontWeight: 800, color: rc.color, lineHeight: 1 }}>{currentUser.name}</div>
+                                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', lineHeight: 1, marginTop: 3 }}>{rc.label}</div>
+                            </div>
+                        </div>
+                        <button onClick={handleLogout} style={{ border: 'none', background: 'transparent', color: '#94a3b8', fontSize: 20, cursor: 'pointer', padding: 6, transition: 'all 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--red-main)'} onMouseLeave={e => e.target.style.color = '#94a3b8'} title="יציאה"><Icon name="sign-out-alt" /></button>
+                    </div>
+                </div>
+
+                <div className="main-area">
+                    {/* Desktop sidebar */}
+                    <div className="sidebar hide-scroll">
+                        <div className="sidebar-label">תפריט ראשי</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <NavItems />
+                        </div>
+                        <div style={{ marginTop: 'auto', padding: '12px 16px', fontSize: 12, fontWeight: 500, color: '#cbd5e1', textAlign: 'center' }}>ביסקוטי © 2025</div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="content-area hide-scroll" style={{ overflowY: 'auto' }}>
+                        {currentUser.role === 'requester' && activeTab === 'new' && <NewTicketForm onAdd={t => { handleAdd(t); setActiveTab('my'); }} />}
+                        {currentUser.role === 'requester' && activeTab === 'my' && <MyTickets tickets={myTickets} onEdit={handleEdit} onDelete={handleDelete} onNew={() => setActiveTab('new')} currentUser={currentUser} addNote={addNote} toggleTag={toggleTag} />}
+                        {currentUser.role === 'worker' && activeTab === 'tasks' && <WorkerTasks tickets={activeTickets} updateStatus={updateStatus} />}
+                        {currentUser.role === 'worker' && activeTab === 'done' && <DoneTickets tickets={tickets.filter(t => t.status === 'טופלה')} updateStatus={updateStatus} currentUser={currentUser} addNote={addNote} toggleTag={toggleTag} />}
+                        {currentUser.role === 'manager' && activeTab === 'dashboard' && <ManagerDashboard tickets={tickets} />}
+                        {currentUser.role === 'manager' && activeTab === 'all' && <AllTickets tickets={tickets} addNote={addNote} toggleTag={toggleTag} updateStatus={updateStatus} currentUser={currentUser} />}
+                        {currentUser.role === 'manager' && activeTab === 'users' && <UsersManager apiUrl={API_URL} />}
+                    </div>
+                </div>
+
+                {/* Mobile bottom nav */}
+                <div className="bottom-nav"><NavItems /></div>
+            </div>
+        );
+    }
+
+    // ===== NEW TICKET FORM =====
+    function NewTicketForm({ onAdd }) {
+        const [form, setForm] = useState({ description: '', location: '', priority: 'רגילה', image: null });
+        const fileRef = useRef(null);
+        const resizeImage = (file) => new Promise(resolve => { const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let [w,h]=[img.width,img.height]; if(w>800){h=h*800/w;w=800;} canvas.width=w;canvas.height=h; canvas.getContext('2d').drawImage(img,0,0,w,h); resolve(canvas.toDataURL('image/jpeg',0.7)); }; img.src=e.target.result; }; reader.readAsDataURL(file); });
+        return (
+            <div style={{ maxWidth: 580, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20, background: 'var(--surface)', padding: 32, borderRadius: 24, boxShadow: 'var(--shadow-sm)', border: '1px solid rgba(255,255,255,0.8)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '2px solid var(--bg-app)', paddingBottom: 16 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--blue-light)', color: 'var(--blue-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}><Icon name="plus-circle" /></div>
+                    <h2 style={{ fontWeight: 900, fontSize: 24, letterSpacing: '-0.5px' }}>פתיחת קריאה חדשה</h2>
+                </div>
+                
+                <div><label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>מיקום במפעל / מחלקה</label><input className="input" type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})} placeholder="לדוגמה: קו אריזה 2 / תנור גדול" /></div>
+                <div>
+                    <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>רמת דחיפות</label>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                        {[{v:'נמוכה',c:'#475569',bg:'#f1f5f9'},{v:'רגילה',c:'var(--blue-main)',bg:'var(--blue-light)'},{v:'דחופה',c:'var(--red-main)',bg:'var(--red-light)'}].map(({v,c,bg}) => (
+                            <button key={v} className="priority-btn" onClick={() => setForm({...form, priority: v})} style={{ borderColor: form.priority===v?c:'var(--border)', background: form.priority===v?bg:'white', color: form.priority===v?c:'var(--text-muted)' }}>{v}</button>
+                        ))}
+                    </div>
+                </div>
+                <div><label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>תיאור מדויק של הבעיה</label><textarea className="input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{ height: 120, resize: 'none' }} placeholder="תאר את התקלה בפירוט, מה בדיוק קרה ומתי..."></textarea></div>
+
+                <div>
+                    <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>תמונה מהשטח (מומלץ)</label>
+                    <button onClick={() => fileRef.current.click()} style={{ width: '100%', padding: '20px', border: '2px dashed #cbd5e1', borderRadius: 16, background: '#f8fafc', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Heebo', fontSize: 15, fontWeight: 600, transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--blue-main)'; e.currentTarget.style.color = 'var(--blue-main)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
+                        <Icon name="camera" style={{ fontSize: 24, marginBottom: 4 }} /> 
+                        {form.image ? 'החלף תמונה מצורפת' : 'לחץ לצילום או בחירת תמונה'}
+                    </button>
+                    <input type="file" accept="image/*" capture="environment" onChange={async e => { const f=e.target.files[0]; if(f) setForm({...form,image:await resizeImage(f)}); }} ref={fileRef} style={{ display: 'none' }} />
+                    {form.image && (
+                        <div style={{ marginTop: 12, position: 'relative', display: 'inline-block', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                            <img src={form.image} style={{ width: 120, height: 120, objectFit: 'cover', display: 'block' }} alt="" />
+                            <button onClick={() => setForm({...form, image: null})} style={{ position: 'absolute', top: 6, right: 6, width: 28, height: 28, borderRadius: '50%', background: 'rgba(220, 38, 38, 0.9)', backdropFilter: 'blur(4px)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}><Icon name="times" /></button>
+                        </div>
+                    )}
+                </div>
+                <button className="btn btn-blue" style={{ width: '100%', padding: '18px', fontSize: 18, marginTop: 8 }} onClick={() => { if(form.location.trim()&&form.description.trim()) onAdd(form); }}><Icon name="paper-plane" /> שליחת קריאה למערכת</button>
+            </div>
+        );
+    }
+
+    // ===== MY TICKETS =====
+    function MyTickets({ tickets, onEdit, onDelete, onNew, currentUser, addNote, toggleTag }) {
+        const [search, setSearch] = useState('');
+        const [filterStatus, setFilterStatus] = useState('הכל');
+        const [editTicket, setEditTicket] = useState(null);
+        const [viewTicket, setViewTicket] = useState(null); // למודאל תצוגה מלאה
+
+        const filtered = tickets.filter(t => {
+            const matchSearch = !search || t.id?.toLowerCase().includes(search.toLowerCase()) || t.location?.includes(search) || t.description?.includes(search);
+            return matchSearch && (filterStatus==='הכל' || t.status===filterStatus);
+        });
+
+        const statusMap = { 'פתוחה': 'var(--red-main)', 'בטיפול': 'var(--orange-main)', 'טופלה': 'var(--green-main)' };
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '2px solid rgba(0,0,0,0.03)' }}>
+                    <h2 style={{ fontWeight: 900, fontSize: 24, letterSpacing: '-0.5px' }}>הקריאות שלי</h2>
+                    <span style={{ background: 'var(--blue-light)', color: 'var(--blue-dark)', padding: '6px 16px', borderRadius: 20, fontWeight: 800, fontSize: 14 }}>סה״כ: {tickets.length}</span>
+                </div>
+
+                {/* Filters */}
+                {tickets.length > 0 && (
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', background: 'var(--surface)', padding: 16, borderRadius: 16, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+                            <Icon name="search" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 16 }} />
+                            <input className="input" type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="חיפוש קריאה..." style={{ paddingRight: 44, borderRadius: 12 }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', padding: 6, borderRadius: 14 }}>
+                            {['הכל','פתוחה','בטיפול','טופלה'].map(s=>(
+                                <button key={s} onClick={()=>setFilterStatus(s)} style={{ 
+                                    padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', 
+                                    fontSize: 14, fontWeight: 700, fontFamily: 'Heebo', 
+                                    background: filterStatus===s?'white':'transparent', 
+                                    color: filterStatus===s?'var(--text-strong)':'var(--text-muted)', 
+                                    boxShadow: filterStatus===s?'0 2px 8px rgba(0,0,0,0.08)':'none',
+                                    transition: 'all 0.2s'
+                                }}>{s}</button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="tickets-grid">
+                    {filtered.map(ticket => (
+                        <div key={ticket.id} className="ticket-list-item" style={{ '--status-color': statusMap[ticket.status] || 'var(--red-main)' }} onClick={() => setViewTicket(ticket)}>
+                            <div className="ticket-list-item-right">
+                                <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', background: '#f1f5f9', padding: '3px 8px', borderRadius: 6 }}>{ticket.id}</span>
+                                <PriorityBadge priority={ticket.priority} minimal={true} />
+                            </div>
+                            <div className="ticket-list-item-center">
+                                <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-strong)' }}>{ticket.location}</div>
+                                <div style={{ fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>{ticket.description}</div>
+                            </div>
+                            <div className="ticket-list-item-left">
+                                <StatusBadge status={ticket.status} />
+                                {ticket.assignedTo && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-dark)', background: 'var(--blue-light)', padding: '3px 10px', borderRadius: 20, border: '1px solid rgba(59, 130, 246, 0.2)' }}><Icon name="hard-hat" style={{ marginLeft: 4 }} />{ticket.assignedTo}</span>}
+                                {ticket.status === 'פתוחה' && (
+                                    <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                                        <button onClick={() => setEditTicket(ticket)} style={{ border: 'none', background: 'var(--blue-light)', color: 'var(--blue-main)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="edit" /></button>
+                                        <button onClick={() => { if(confirm('למחוק קריאה זו?')) onDelete(ticket.id); }} style={{ border: 'none', background: 'var(--red-light)', color: 'var(--red-main)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="trash" /></button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    {filtered.length===0 && tickets.length>0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>לא נמצאו קריאות מתאימות לחיפוש.</div>}
+                </div>
+                
+                {tickets.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '60px 24px', background: 'var(--surface)', borderRadius: 24, border: '2px dashed #e2e8f0' }}>
+                        <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                            <Icon name="clipboard-list" style={{ fontSize: 36, color: '#94a3b8' }} />
+                        </div>
+                        <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-strong)', marginBottom: 8 }}>אין לך קריאות פתוחות</h3>
+                        <p style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: 15 }}>הכל תקין ועובד כשורה!</p>
+                        <button className="btn btn-blue" style={{ margin: '24px auto 0', padding: '14px 28px' }} onClick={onNew}><Icon name="plus" /> פתח קריאה ראשונה</button>
+                    </div>
+                )}
+                
+                {editTicket && <EditTicketModal ticket={editTicket} onSave={(id, data) => { onEdit(id, data); setEditTicket(null); }} onClose={() => setEditTicket(null)} />}
+                {viewTicket && <TicketModal ticket={viewTicket} onClose={() => setViewTicket(null)} onAddNote={(id, text)=>addNote(id,text)} onToggleTag={(id, tag)=>toggleTag(id,tag)} readOnly={true} />}
+            </div>
+        );
+    }
+
+    function EditTicketModal({ ticket, onSave, onClose }) {
+        const [form, setForm] = useState({ description: ticket.description, location: ticket.location, priority: ticket.priority, image: ticket.image });
+        return (
+            <div className="modal-bg" onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
+                <div className="modal-sheet">
+                    <div className="modal-handle"></div>
+                    <div style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+                        <h2 style={{ fontWeight: 800, fontSize: 20 }}>עריכת קריאה <span style={{ color: 'var(--text-muted)', fontSize: 16, fontWeight: 600 }}>#{ticket.id}</span></h2>
+                        <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: '#f1f5f9', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}><Icon name="times" /></button>
+                    </div>
+                    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+                        <div><label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>מחלקה / מיקום</label><input className="input" value={form.location} onChange={e=>setForm({...form,location:e.target.value})} /></div>
+                        <div><label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>דחיפות</label>
+                            <div style={{ display: 'flex', gap: 10 }}>{[{v:'נמוכה',c:'#475569'},{v:'רגילה',c:'var(--blue-main)'},{v:'דחופה',c:'var(--red-main)'}].map(({v,c})=>(<button key={v} className="priority-btn" onClick={()=>setForm({...form,priority:v})} style={{ borderColor: form.priority===v?c:'var(--border)', color: form.priority===v?c:'var(--text-muted)', background: form.priority===v?`${c}10`:'white' }}>{v}</button>))}</div>
+                        </div>
+                        <div><label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>תיאור התקלה</label><textarea className="input" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{ height: 100, resize: 'none' }}></textarea></div>
+                        <button className="btn btn-blue" style={{ width: '100%', padding: '16px', marginTop: 8 }} onClick={() => onSave(ticket.id, form)}><Icon name="save" /> שמור שינויים</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ===== WORKER TASKS =====
+    function WorkerTasks({ tickets, updateStatus }) {
+        const [startTicket, setStartTicket] = useState(null);
+        const [finishTicket, setFinishTicket] = useState(null);
+        const [selectedWorker, setSelectedWorker] = useState('');
+        const [resolution, setResolution] = useState('');
+        const WORKERS = ['שי', 'אלי', 'עוזי'];
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '2px solid rgba(0,0,0,0.03)' }}>
+                    <h2 style={{ fontWeight: 900, fontSize: 24, letterSpacing: '-0.5px' }}>משימות פתוחות לטיפול</h2>
+                    <span style={{ background: 'var(--orange-light)', color: 'var(--orange-dark)', padding: '6px 16px', borderRadius: 20, fontWeight: 800, fontSize: 14 }}>סה״כ: {tickets.length}</span>
+                </div>
+                <div className="tickets-grid">
+                    {tickets.map(ticket => (
+                        <div key={ticket.id} className="ticket-card" style={{ 
+                            borderColor: ticket.priority==='דחופה' ? 'rgba(239, 68, 68, 0.3)' : 'var(--border)', 
+                            background: ticket.priority==='דחופה' ? 'linear-gradient(to bottom, #fff5f5, white)' : 'var(--surface)',
+                            boxShadow: ticket.priority==='דחופה' ? '0 4px 16px rgba(239, 68, 68, 0.08)' : 'var(--shadow-sm)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
+                                <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', background: '#f1f5f9', padding: '3px 8px', borderRadius: 6 }}>{ticket.id}</span>
+                                <div style={{ display: 'flex', gap: 8 }}><PriorityBadge priority={ticket.priority} /><StatusBadge status={ticket.status} /></div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: 12, marginBottom: 16 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                    <Icon name="map-marker-alt" style={{ color: 'var(--blue-main)' }} />
+                                </div>
+                                <strong style={{ fontSize: 18, color: 'var(--text-strong)' }}>{ticket.location}</strong>
+                            </div>
+
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>תיאור הבעיה:</div>
+                                <p style={{ color: 'var(--text-strong)', fontSize: 15, lineHeight: 1.6 }}>{ticket.description}</p>
+                            </div>
+
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                                {ticket.openedByName && <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', background: '#f8fafc', padding: '4px 10px', borderRadius: 20 }}><Icon name="user" style={{ fontSize: 11 }} /> נפתח ע"י {ticket.openedByName}</div>}
+                                {ticket.assignedTo && ticket.status === 'בטיפול' && (
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: 'var(--blue-dark)', background: 'var(--blue-light)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                        <Icon name="hard-hat" style={{ fontSize: 14 }} /> מטופל ע״י {ticket.assignedTo}
+                                    </div>
+                                )}
+                            </div>
+
+                            {ticket.tags?.length>0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>{ticket.tags.map(tag=><span key={tag} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', color: 'var(--text-strong)', fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 20 }}>{tag}</span>)}</div>}
+                            
+                            {ticket.managerNotes?.length>0 && (
+                                <div style={{ background: 'var(--purple-light)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: 14, padding: 14, marginBottom: 16 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 800, color: 'var(--purple-dark)', marginBottom: 10 }}><Icon name="info-circle" /> דגשים מההנהלה:</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                        {ticket.managerNotes.map(note=><div key={note.id} style={{ fontSize: 14, color: '#4c1d95', background: 'white', padding: '10px', borderRadius: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}><div style={{ fontSize: 11, fontWeight: 700, color: 'var(--purple-main)', marginBottom: 4 }}>{note.date}{note.by&&` — ${note.by}`}</div>{note.text}</div>)}
+                                    </div>
+                                </div>
+                            )}
+
+                            {ticket.image && <div style={{ marginBottom: 16, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)', background: '#f8fafc' }}><img src={ticket.image} style={{ width: '100%', maxHeight: 300, objectFit: 'contain', display: 'block' }} alt="" /></div>}
+                            
+                            <div style={{ paddingTop: 16, borderTop: '1px dashed #e2e8f0', marginTop: 'auto' }}>
+                                {ticket.status==='פתוחה' && <button className="btn btn-orange" style={{ width: '100%' }} onClick={()=>setStartTicket(ticket)}><Icon name="play-circle" style={{ fontSize: 18 }} /> התחל טיפול עכשיו</button>}
+                                {ticket.status==='בטיפול' && <button className="btn btn-green" style={{ width: '100%' }} onClick={()=>setFinishTicket(ticket)}><Icon name="check-circle" style={{ fontSize: 18 }} /> סיום משימה ודיווח</button>}
+                            </div>
+                        </div>
+                    ))}
+                    {tickets.length===0 && (
+                        <div style={{ textAlign: 'center', padding: '80px 24px', background: 'var(--surface)', borderRadius: 24, border: '2px dashed #e2e8f0' }}>
+                            <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--green-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 10px 25px rgba(34, 197, 94, 0.2)' }}>
+                                <Icon name="check" style={{ fontSize: 48, color: 'var(--green-main)' }} />
+                            </div>
+                            <h3 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-strong)', marginBottom: 8 }}>אין משימות פתוחות!</h3>
+                            <p style={{ color: 'var(--text-muted)', fontSize: 16, fontWeight: 500 }}>הכל תקין, עבודה מצוינת 🎉</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* MODAL - START TREATMENT */}
+                {startTicket && (
+                    <div className="modal-bg" onClick={e => { if(e.target===e.currentTarget) setStartTicket(null); }}>
+                        <div className="modal-sheet" style={{ maxWidth: 420 }}>
+                            <div className="modal-handle"></div>
+                            <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
+                                <h2 style={{ fontWeight: 900, fontSize: 22 }}>מי מטפל בתקלה?</h2>
+                                <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4, fontWeight: 500 }}>{startTicket.location} (קריאה {startTicket.id})</p>
+                            </div>
+                            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                {WORKERS.map(w => (
+                                    <button key={w} onClick={() => setSelectedWorker(w)} style={{ 
+                                        padding: '16px 20px', borderRadius: '16px', 
+                                        border: `2px solid ${selectedWorker===w ? 'var(--orange-main)' : '#e2e8f0'}`, 
+                                        background: selectedWorker===w ? 'var(--orange-light)' : 'white', 
+                                        color: selectedWorker===w ? 'var(--orange-dark)' : 'var(--text-strong)',
+                                        fontSize: 18, fontWeight: 800, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                        transition: 'all 0.2s'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: selectedWorker===w ? 'var(--orange-main)' : '#f1f5f9', color: selectedWorker===w ? 'white' : '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="user" /></div>
+                                            {w}
+                                        </div>
+                                        {selectedWorker===w && <Icon name="check-circle" style={{ fontSize: 22 }} />}
+                                    </button>
+                                ))}
+                                <button className="btn btn-orange" style={{ width: '100%', padding: '18px', marginTop: 12, fontSize: 16 }} disabled={!selectedWorker} onClick={() => { updateStatus(startTicket.id, 'בטיפול', { assignedTo: selectedWorker }); setStartTicket(null); setSelectedWorker(''); }}><Icon name="play" /> אשר והתחל בעבודה</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* MODAL - FINISH TREATMENT */}
+                {finishTicket && (
+                    <div className="modal-bg" onClick={e => { if(e.target===e.currentTarget) setFinishTicket(null); }}>
+                        <div className="modal-sheet" style={{ maxWidth: 500 }}>
+                            <div className="modal-handle"></div>
+                            <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
+                                <h2 style={{ fontWeight: 900, fontSize: 22 }}>סיום טיפול בתקלה</h2>
+                                <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4, fontWeight: 500 }}>{finishTicket.location} (קריאה {finishTicket.id})</p>
+                            </div>
+                            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                <div>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 800, color: 'var(--text-strong)', marginBottom: 10 }}>פירוט הטיפול שבוצע <span style={{ color: 'var(--red-main)' }}>*</span></label>
+                                    <textarea className="input" placeholder="לדוגמה: הוחלף מנוע, נוקה הפילטר, חובר מחדש כבל חשמל..." value={resolution} onChange={e => setResolution(e.target.value)} style={{ height: 140, resize: 'none', fontSize: 15 }} autoFocus></textarea>
+                                </div>
+                                <button className="btn btn-green" style={{ width: '100%', padding: '18px', fontSize: 16 }} disabled={!resolution.trim()} onClick={() => { updateStatus(finishTicket.id, 'טופלה', { resolution: resolution.trim() }); setFinishTicket(null); setResolution(''); }}><Icon name="check-double" /> סגור קריאה בהצלחה</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ===== DONE TICKETS =====
+    function DoneTickets({ tickets, updateStatus, currentUser, addNote, toggleTag }) {
+        const [search, setSearch] = useState('');
+        const [filterWorker, setFilterWorker] = useState('הכל');
+        const [viewTicket, setViewTicket] = useState(null);
+
+        const filtered = tickets.filter(t => {
+            const matchSearch = !search || t.id?.toLowerCase().includes(search.toLowerCase()) || t.location?.includes(search) || t.description?.includes(search);
+            const matchWorker = filterWorker === 'הכל' || t.assignedTo === filterWorker;
+            return matchSearch && matchWorker;
+        });
+
+        const uniqueWorkers = [...new Set(tickets.map(t => t.assignedTo).filter(Boolean))];
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '2px solid rgba(0,0,0,0.03)' }}>
+                    <h2 style={{ fontWeight: 900, fontSize: 24, letterSpacing: '-0.5px' }}>היסטוריית טיפולים</h2>
+                    <span style={{ background: 'var(--green-light)', color: 'var(--green-dark)', padding: '6px 16px', borderRadius: 20, fontWeight: 800, fontSize: 14 }}>הושלמו: {tickets.length}</span>
+                </div>
+
+                {/* Filters */}
+                {tickets.length > 0 && (
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', background: 'var(--surface)', padding: 16, borderRadius: 16, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                        <div style={{ position: 'relative', flex: 2, minWidth: 200 }}>
+                            <Icon name="search" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 16 }} />
+                            <input className="input" type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="חיפוש בהיסטוריה..." style={{ paddingRight: 44, borderRadius: 12 }} />
+                        </div>
+                        <div style={{ position: 'relative', flex: 1, minWidth: 160 }}>
+                            <Icon name="hard-hat" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 16 }} />
+                            <select className="input" value={filterWorker} onChange={e=>setFilterWorker(e.target.value)} style={{ paddingRight: 44, paddingLeft: 30, borderRadius: 12, appearance: 'none', cursor: 'pointer', color: filterWorker==='הכל' ? 'var(--text-muted)' : 'var(--text-strong)', fontWeight: filterWorker==='הכל' ? 500 : 700 }}>
+                                <option value="הכל">כל אנשי הצוות</option>
+                                {uniqueWorkers.map(w => <option key={w} value={w}>{w}</option>)}
+                            </select>
+                            <Icon name="chevron-down" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 12, pointerEvents: 'none' }} />
+                        </div>
+                    </div>
+                )}
+
+                {/* Compact List View */}
+                <div className="tickets-grid">
+                    {filtered.map(ticket => (
+                        <div key={ticket.id} className="ticket-list-item" style={{ '--status-color': 'var(--green-main)' }} onClick={() => setViewTicket(ticket)}>
+                            <div className="ticket-list-item-right">
+                                <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', background: '#f1f5f9', padding: '3px 8px', borderRadius: 6 }}>{ticket.id}</span>
+                            </div>
+                            <div className="ticket-list-item-center">
+                                <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-strong)' }}>{ticket.location}</div>
+                                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{ticket.date}</div>
+                            </div>
+                            <div className="ticket-list-item-left">
+                                <StatusBadge status={ticket.status} />
+                                {ticket.assignedTo && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-dark)', background: 'var(--green-light)', padding: '3px 10px', borderRadius: 20, border: '1px solid rgba(34, 197, 94, 0.2)' }}><Icon name="check-double" style={{ marginLeft: 4 }} />{ticket.assignedTo}</span>}
+                            </div>
+                        </div>
+                    ))}
+                    {filtered.length===0 && tickets.length>0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>לא נמצאו קריאות מתאימות לחיפוש.</div>}
+                </div>
+
+                {tickets.length===0 && <div style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--text-muted)', background: 'var(--surface)', borderRadius: 24, border: '2px dashed #e2e8f0', fontSize: 16, fontWeight: 500 }}>אין היסטוריית קריאות שטופלו.</div>}
+
+                {viewTicket && <TicketModal ticket={viewTicket} onClose={() => setViewTicket(null)} onAddNote={(id, text)=>addNote(id,text)} onToggleTag={(id, tag)=>toggleTag(id,tag)} readOnly={true} onReopen={id=>{ updateStatus(id,'פתוחה',{assignedTo:'',resolution:''}); setViewTicket({...viewTicket,status:'פתוחה'}); }} />}
+            </div>
+        );
+    }
+
+    // ===== MANAGER DASHBOARD =====
+    function ManagerDashboard({ tickets }) {
+        const stats = [
+            { label: 'סה״כ קריאות', count: tickets.length, icon: 'list-alt', bg: 'var(--blue-light)', color: 'var(--blue-dark)', iconBg: 'var(--blue-main)' },
+            { label: 'ממתינות לטיפול', count: tickets.filter(t=>t.status==='פתוחה').length, icon: 'exclamation-circle', bg: 'var(--red-light)', color: 'var(--red-dark)', iconBg: 'var(--red-main)' },
+            { label: 'בשלבי עבודה', count: tickets.filter(t=>t.status==='בטיפול').length, icon: 'tools', bg: 'var(--orange-light)', color: 'var(--orange-dark)', iconBg: 'var(--orange-main)' },
+            { label: 'טופלו בהצלחה', count: tickets.filter(t=>t.status==='טופלה').length, icon: 'check-circle', bg: 'var(--green-light)', color: 'var(--green-dark)', iconBg: 'var(--green-main)' },
+        ];
+        const urgent = tickets.filter(t => t.priority==='דחופה' && t.status!=='טופלה');
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <h2 style={{ fontWeight: 900, fontSize: 26, letterSpacing: '-0.5px' }}>מבט על - דשבורד מנהלים</h2>
+                <div className="stat-grid">
+                    {stats.map(s => (
+                        <div key={s.label} className="stat-card">
+                            <div className="stat-icon" style={{ background: `linear-gradient(135deg, ${s.iconBg}, ${s.color})` }}><Icon name={s.icon} /></div>
+                            <div>
+                                <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 700, marginBottom: 4 }}>{s.label}</div>
+                                <div style={{ fontSize: 36, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.count}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                {urgent.length > 0 && (
+                    <div style={{ background: 'linear-gradient(to bottom right, var(--red-light), #fff)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 20, padding: 24, boxShadow: '0 8px 24px rgba(239, 68, 68, 0.08)' }}>
+                        <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--red-dark)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="exclamation-triangle" style={{ fontSize: 20 }} /> התראה: {urgent.length} קריאות דחופות דורשות התייחסות</div>
+                        <div className="tickets-grid">
+                            {urgent.map(t => (
+                                <div key={t.id} style={{ background: 'white', borderRadius: 14, padding: 16, border: '1px solid rgba(239, 68, 68, 0.3)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                                        <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-strong)' }}>{t.location}</div>
+                                        <StatusBadge status={t.status} />
+                                    </div>
+                                    <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 10 }}>{t.description}</div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>{t.id} • {t.date}</div>
+                                        {t.openedByName && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}><Icon name="user" style={{ marginRight: 4 }} />{t.openedByName}</div>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ===== ALL TICKETS =====
+    function AllTickets({ tickets, addNote, toggleTag, updateStatus, currentUser }) {
+        const [search, setSearch] = useState('');
+        const [filterStatus, setFilterStatus] = useState('הכל');
+        const [filterWorker, setFilterWorker] = useState('הכל');
+        const [selectedTicket, setSelectedTicket] = useState(null);
+
+        const filtered = tickets.filter(t => {
+            const matchSearch = !search || t.id?.toLowerCase().includes(search.toLowerCase()) || t.location?.includes(search) || t.description?.includes(search) || t.openedByName?.includes(search);
+            const matchStatus = filterStatus === 'הכל' || t.status === filterStatus;
+            const matchWorker = filterWorker === 'הכל' || t.assignedTo === filterWorker;
+            return matchSearch && matchStatus && matchWorker;
+        });
+
+        const handleAddNote = (id, text) => { addNote(id, text); const note = { id: Date.now(), text, date: new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}), by: currentUser.name }; setSelectedTicket({ ...selectedTicket, managerNotes: [...(selectedTicket.managerNotes||[]), note] }); };
+        const handleToggleTag = (id, tag) => { toggleTag(id, tag); const curr = selectedTicket.tags||[]; setSelectedTicket({ ...selectedTicket, tags: curr.includes(tag)?curr.filter(t=>t!==tag):[...curr,tag] }); };
+
+        const uniqueWorkers = [...new Set(tickets.map(t => t.assignedTo).filter(Boolean))];
+        const statusMap = { 'פתוחה': 'var(--red-main)', 'בטיפול': 'var(--orange-main)', 'טופלה': 'var(--green-main)' };
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <h2 style={{ fontWeight: 900, fontSize: 24, letterSpacing: '-0.5px' }}>כל הקריאות במערכת</h2>
+                
+                {/* Filters */}
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', background: 'var(--surface)', padding: 16, borderRadius: 16, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                    <div style={{ position: 'relative', flex: 2, minWidth: 200 }}>
+                        <Icon name="search" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 16 }} />
+                        <input className="input" type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="חיפוש חופשי..." style={{ paddingRight: 44, borderRadius: 12 }} />
+                    </div>
+                    
+                    <div style={{ position: 'relative', flex: 1, minWidth: 160 }}>
+                        <Icon name="hard-hat" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 16 }} />
+                        <select className="input" value={filterWorker} onChange={e=>setFilterWorker(e.target.value)} style={{ paddingRight: 44, paddingLeft: 30, borderRadius: 12, appearance: 'none', cursor: 'pointer', color: filterWorker==='הכל' ? 'var(--text-muted)' : 'var(--text-strong)', fontWeight: filterWorker==='הכל' ? 500 : 700 }}>
+                            <option value="הכל">כל אנשי הצוות</option>
+                            {uniqueWorkers.map(w => <option key={w} value={w}>{w}</option>)}
+                        </select>
+                        <Icon name="chevron-down" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 12, pointerEvents: 'none' }} />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', padding: 6, borderRadius: 14 }}>
+                        {['הכל','פתוחה','בטיפול','טופלה'].map(s=>(
+                            <button key={s} onClick={()=>setFilterStatus(s)} style={{ 
+                                padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', 
+                                fontSize: 14, fontWeight: 700, fontFamily: 'Heebo', 
+                                background: filterStatus===s?'white':'transparent', 
+                                color: filterStatus===s?'var(--text-strong)':'var(--text-muted)', 
+                                boxShadow: filterStatus===s?'0 2px 8px rgba(0,0,0,0.08)':'none',
+                                transition: 'all 0.2s'
+                            }}>{s}</button>
+                        ))}
+                    </div>
+                </div>
+                
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)' }}>מציג {filtered.length} תוצאות</div>
+                
+                {/* Compact List View */}
+                <div className="tickets-grid">
+                    {filtered.map(ticket => (
+                        <div key={ticket.id} className="ticket-list-item" style={{ '--status-color': statusMap[ticket.status] || 'var(--red-main)' }} onClick={() => setSelectedTicket(ticket)}>
+                            <div className="ticket-list-item-right">
+                                <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', background: '#f1f5f9', padding: '3px 8px', borderRadius: 6 }}>{ticket.id}</span>
+                                <PriorityBadge priority={ticket.priority} minimal={true} />
+                            </div>
+                            <div className="ticket-list-item-center">
+                                <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-strong)' }}>{ticket.location}</div>
+                                <div style={{ fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>{ticket.description}</div>
+                            </div>
+                            <div className="ticket-list-item-left">
+                                <StatusBadge status={ticket.status} />
+                                {ticket.assignedTo && ticket.status !== 'פתוחה' && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-dark)', background: 'var(--blue-light)', padding: '3px 10px', borderRadius: 20, border: '1px solid rgba(59, 130, 246, 0.2)' }}><Icon name="hard-hat" style={{ marginLeft: 4 }} />{ticket.assignedTo}</span>}
+                            </div>
+                        </div>
+                    ))}
+                    {filtered.length===0 && <div style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--text-muted)', background: 'var(--surface)', borderRadius: 20, border: '2px dashed #e2e8f0', fontSize: 16, fontWeight: 500 }}><Icon name="search" style={{ fontSize: 32, marginBottom: 12, opacity: 0.5, display: 'block' }} />לא נמצאו קריאות התואמות את החיפוש</div>}
+                </div>
+                {selectedTicket && <TicketModal ticket={selectedTicket} onClose={()=>setSelectedTicket(null)} onAddNote={handleAddNote} onToggleTag={handleToggleTag} onReopen={id=>{ updateStatus(id,'פתוחה',{assignedTo:'',resolution:''}); setSelectedTicket({...selectedTicket,status:'פתוחה',assignedTo:'',resolution:''}); }} />}
+            </div>
+        );
+    }
+
+    // ===== TICKET MODAL (View Full Details) =====
+    function TicketModal({ ticket, onClose, onAddNote, onToggleTag, onReopen, readOnly }) {
+        const [noteText, setNoteText] = useState('');
+        return (
+            <div className="modal-bg" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+                <div className="modal-sheet">
+                    <div className="modal-handle"></div>
+                    <div style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', zIndex: 10, borderRadius: '24px 24px 0 0' }}>
+                        <div><h2 style={{ fontWeight: 900, fontSize: 22 }}>{ticket.location}</h2><span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>{ticket.id}</span></div>
+                        <div style={{ display: 'flex', gap: 12 }}>
+                            {onReopen && ticket.status==='טופלה' && <button onClick={()=>onReopen(ticket.id)} style={{ padding: '8px 16px', borderRadius: 12, border: '1.5px solid #fcd34d', background: '#fefce8', color: '#b45309', cursor: 'pointer', fontFamily: 'Heebo', fontWeight: 700, fontSize: 14, transition: 'all 0.2s' }}><Icon name="sync-alt" /> פתח קריאה</button>}
+                            <button onClick={onClose} style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: '#f1f5f9', cursor: 'pointer', color: 'var(--text-strong)', fontSize: 18, transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}><Icon name="times" /></button>
+                        </div>
+                    </div>
+                    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        <div style={{ background: '#f8fafc', borderRadius: 16, padding: 20, border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                                <StatusBadge status={ticket.status} />
+                                <PriorityBadge priority={ticket.priority} />
+                                {ticket.openedByName && <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', background: 'white', padding: '4px 12px', borderRadius: 20, border: '1px solid #e2e8f0' }}><Icon name="user" style={{ marginLeft: 4 }} />נפתח ע"י {ticket.openedByName}</span>}
+                                {ticket.assignedTo && ticket.status !== 'פתוחה' && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-dark)', background: 'var(--blue-light)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(59, 130, 246, 0.2)' }}><Icon name="hard-hat" style={{ marginLeft: 4 }} />{ticket.status === 'טופלה' ? 'טופל ע"י' : 'בטיפול ע"י'} {ticket.assignedTo}</span>}
+                            </div>
+                            <p style={{ color: 'var(--text-strong)', fontSize: 16, lineHeight: 1.6, fontWeight: 500 }}>{ticket.description}</p>
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12 }}><Icon name="clock" /> תאריך פתיחה: {ticket.date}</div>
+                        </div>
+
+                        {ticket.resolution && (
+                            <div>
+                                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 12, color: 'var(--green-dark)' }}><Icon name="check-circle" style={{ marginLeft: 8 }} />פירוט טיפול וסגירה</div>
+                                <div style={{ background: 'var(--green-light)', borderRadius: '16px', padding: '16px', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--green-dark)', marginBottom: 6 }}>טופל ע"י {ticket.assignedTo || 'צוות אחזקה'}:</div>
+                                    <div style={{ color: 'var(--text-strong)', fontSize: 15, lineHeight: 1.5, fontWeight: 500 }}>{ticket.resolution}</div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {!readOnly && (
+                            <div>
+                                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 12, color: 'var(--text-strong)' }}><Icon name="tags" style={{ color: 'var(--purple-main)', marginLeft: 8 }} />תיוג וסיווג מהיר</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                                    {AVAILABLE_TAGS.map(tag => { 
+                                        const active=ticket.tags?.includes(tag); 
+                                        return <button key={tag} className="tag-btn" onClick={()=>onToggleTag(ticket.id,tag)} style={{ 
+                                            borderColor: active?'var(--purple-main)':'#cbd5e1', 
+                                            background: active?'var(--purple-main)':'transparent', 
+                                            color: active?'white':'var(--text-muted)' 
+                                        }}>{tag}</button>; 
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {(ticket.managerNotes?.length>0 || !readOnly) && (
+                            <div>
+                                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 12, color: 'var(--text-strong)' }}><Icon name="comment-dots" style={{ color: 'var(--blue-main)', marginLeft: 8 }} />הערות פנימיות והנחיות צוות</div>
+                                {ticket.managerNotes?.length>0 && <div style={{ background: 'var(--blue-light)', borderRadius: 16, padding: 16, marginBottom: 16, maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+                                    {ticket.managerNotes.map(note=><div key={note.id} style={{ background: 'white', borderRadius: 12, padding: 14, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}><div style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue-main)', marginBottom: 6 }}>{note.date}{note.by&&` — ${note.by}`}</div><div style={{ fontSize: 15, color: 'var(--text-strong)', lineHeight: 1.4 }}>{note.text}</div></div>)}
+                                </div>}
+                                {!readOnly && (
+                                    <>
+                                        <textarea className="input" value={noteText} onChange={e=>setNoteText(e.target.value)} placeholder="הוסף הערה או הנחיה לאיש האחזקה..." style={{ height: 90, resize: 'none', marginBottom: 12, borderRadius: 16 }}></textarea>
+                                        <button className="btn" onClick={()=>{ if(noteText.trim()){onAddNote(ticket.id,noteText);setNoteText('');} }} disabled={!noteText.trim()} style={{ width: '100%', padding: '16px', background: noteText.trim()?'var(--blue-main)':'#cbd5e1', color: 'white', fontSize: 16, cursor: noteText.trim()?'pointer':'not-allowed' }}><Icon name="paper-plane" /> פרסם הערה</button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        
+                        {ticket.image && <div>
+                            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 12, color: 'var(--text-strong)' }}><Icon name="camera" style={{ color: 'var(--orange-main)', marginLeft: 8 }} />תמונה מהשטח</div>
+                            <img src={ticket.image} style={{ width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 16, border: '2px solid #f1f5f9', background: '#f8fafc' }} alt="" />
+                        </div>}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ===== USERS MANAGER =====
+    function UsersManager({ apiUrl }) {
+        const [users, setUsers] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [showAdd, setShowAdd] = useState(false);
+        const [newUser, setNewUser] = useState({ username: '', password: '', name: '', role: 'requester' });
+        const [saving, setSaving] = useState(false);
+        const [msg, setMsg] = useState('');
+
+        const loadUsers = async () => { setLoading(true); try { const res = await fetch(`${apiUrl}?action=getUsers`); const data = await res.json(); setUsers(data.users||[]); } catch { setMsg('שגיאה בטעינת משתמשים'); } setLoading(false); };
+        useEffect(() => { loadUsers(); }, []);
+
+        const handleAdd = async () => {
+            if (!newUser.username||!newUser.password||!newUser.name) { setMsg('יש למלא את כל השדות'); return; }
+            setSaving(true);
+            try { await fetch(apiUrl, { method: 'POST', body: JSON.stringify({ action: 'addUser', user: newUser }), headers: { "Content-Type": "text/plain;charset=utf-8" }, mode: 'no-cors' }); setMsg('המשתמש נוסף בהצלחה'); setNewUser({ username: '', password: '', name: '', role: 'requester' }); setShowAdd(false); setTimeout(() => loadUsers(), 1500); }
+            catch { setMsg('שגיאה בהוספת משתמש'); }
+            setSaving(false);
+        };
+
+        const handleDelete = async (username) => { if (!confirm(`האם אתה בטוח שברצונך למחוק את המשתמש ${username}?`)) return; try { await fetch(apiUrl, { method: 'POST', body: JSON.stringify({ action: 'deleteUser', username }), headers: { "Content-Type": "text/plain;charset=utf-8" }, mode: 'no-cors' }); setMsg('המשתמש נמחק'); setTimeout(() => loadUsers(), 1500); } catch { setMsg('שגיאה במחיקה'); } };
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 800, margin: '0 auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 16, borderBottom: '2px solid rgba(0,0,0,0.03)' }}>
+                    <h2 style={{ fontWeight: 900, fontSize: 24, letterSpacing: '-0.5px' }}>ניהול הרשאות משתמשים</h2>
+                    <button className="btn btn-blue" style={{ padding: '12px 20px', fontSize: 15 }} onClick={() => setShowAdd(true)}><Icon name="user-plus" /> הוספת משתמש חדש</button>
+                </div>
+                
+                {msg && <div style={{ background: 'var(--green-light)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: 12, padding: '14px 20px', color: 'var(--green-dark)', fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 }}><Icon name="check-circle" /> {msg}</div>}
+                
+                {loading ? <div style={{ textAlign: 'center', padding: 60 }}><Icon name="spinner" className="spinner" style={{ fontSize: 36, color: 'var(--blue-main)' }} /></div> : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {users.map(user => {
+                            const r = ROLE_COLORS[user.role] || ROLE_COLORS.requester;
+                            return (
+                                <div key={user.username} style={{ background: 'var(--surface)', borderRadius: 18, border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: 'var(--shadow-sm)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                        <div style={{ width: 50, height: 50, borderRadius: '14px', background: `linear-gradient(135deg, ${r.color}, ${r.color}dd)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: 'white', flexShrink: 0, boxShadow: `0 4px 12px ${r.color}30` }}>{user.name?.charAt(0)||'?'}</div>
+                                        <div>
+                                            <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text-strong)' }}>{user.name}</div>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginTop: 2 }}>@{user.username}</div>
+                                            <span style={{ fontSize: 12, fontWeight: 700, color: r.color, background: r.bg, padding: '4px 12px', borderRadius: 20, marginTop: 8, display: 'inline-block', border: `1px solid ${r.color}20` }}>{r.label}</span>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => handleDelete(user.username)} style={{ border: 'none', background: 'var(--red-light)', color: 'var(--red-main)', borderRadius: 12, width: 44, height: 44, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#fecaca'} onMouseLeave={e => e.currentTarget.style.background = 'var(--red-light)'} title="מחק משתמש"><Icon name="trash-alt" /></button>
+                                </div>
+                            );
+                        })}
+                        {users.length===0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 16, fontWeight: 500, border: '2px dashed #e2e8f0', borderRadius: 20 }}>אין משתמשים להצגה.</div>}
+                    </div>
+                )}
+                
+                {showAdd && (
+                    <div className="modal-bg" onClick={e=>{ if(e.target===e.currentTarget) setShowAdd(false); }}>
+                        <div className="modal-sheet">
+                            <div className="modal-handle"></div>
+                            <div style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+                                <h2 style={{ fontWeight: 900, fontSize: 22 }}>הגדרת משתמש חדש</h2>
+                                <button onClick={()=>setShowAdd(false)} style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: '#f1f5f9', cursor: 'pointer', color: 'var(--text-strong)', fontSize: 18, transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}><Icon name="times" /></button>
+                            </div>
+                            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+                                <div><label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>שם מלא (תצוגה)</label><input className="input" value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})} placeholder="לדוגמה: ישראל ישראלי" /></div>
+                                <div><label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>שם משתמש (לכניסה)</label><input className="input" value={newUser.username} onChange={e=>setNewUser({...newUser,username:e.target.value})} placeholder="לדוגמה: israel1" autoComplete="off" dir="ltr" style={{ textAlign: 'left' }} /></div>
+                                <div><label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>סיסמה ראשונית</label><input className="input" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} placeholder="הקש סיסמה..." autoComplete="new-password" dir="ltr" style={{ textAlign: 'left' }} /></div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>הגדרת הרשאות / תפקיד</label>
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        {Object.entries(ROLE_COLORS).map(([v, r]) => (
+                                            <button key={v} className="priority-btn" onClick={()=>setNewUser({...newUser,role:v})} style={{ 
+                                                borderColor: newUser.role===v?r.color:'#e2e8f0', 
+                                                background: newUser.role===v?r.bg:'white', 
+                                                color: newUser.role===v?r.color:'var(--text-muted)', 
+                                                fontSize: 14 
+                                            }}>{r.label}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button className="btn btn-blue" style={{ width: '100%', padding: '16px', fontSize: 18, marginTop: 12 }} onClick={handleAdd} disabled={saving}>
+                                    {saving ? <><Icon name="spinner" className="spinner" /> שומר נתונים...</> : <><Icon name="user-check" /> שמור והוסף למערכת</>}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
