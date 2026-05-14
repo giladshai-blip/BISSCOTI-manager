@@ -425,18 +425,46 @@
 
   <!-- ═══ INVENTORY ══════════════════════════════════════════════ -->
   <div id="view-inventory" class="app-view">
-    <!-- Sub-tabs — mobile only -->
-    <div class="sub-tabs md:hidden">
-      <button class="sub-tab active" id="inv-tab-inv" onclick="showInvTab('inv')">מלאי ירקות</button>
-      <button class="sub-tab" id="inv-tab-ord" onclick="showInvTab('ord')">הזמנות</button>
+
+    <!-- Dashboard category cards -->
+    <div id="inv-dashboard" class="grid grid-cols-2 gap-3 mb-5">
+      <button onclick="showInvTab('inv')" id="inv-card-inv"
+        class="card text-right cursor-pointer transition hover:-translate-y-0.5 border-2 border-green-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center text-green-600 flex-shrink-0">
+            <i class="fa-solid fa-box"></i>
+          </div>
+          <span id="inv-card-low-badge" class="hidden text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black"></span>
+        </div>
+        <div class="font-black text-gray-800 text-sm mb-1">מלאי ירקות</div>
+        <div id="inv-card-stat" class="text-2xl font-black text-green-600">–</div>
+        <div class="text-[10px] text-gray-400 font-bold mt-0.5">תקין / סה"כ</div>
+      </button>
+
+      <button onclick="showInvTab('ord')" id="inv-card-ord"
+        class="card text-right cursor-pointer transition hover:-translate-y-0.5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0">
+            <i class="fa-solid fa-basket-shopping"></i>
+          </div>
+        </div>
+        <div class="font-black text-gray-800 text-sm mb-1">הזמנות</div>
+        <div id="ord-card-stat" class="text-2xl font-black text-purple-600">–</div>
+        <div class="text-[10px] text-gray-400 font-bold mt-0.5">פריטים בהזמנה</div>
+      </button>
     </div>
 
     <!-- Inventory panel -->
-    <div id="inv-panel-inv">
+    <div id="inv-panel-inv" class="hidden">
       <header class="flex flex-wrap gap-3 justify-between items-center mb-4">
-        <h2 class="text-xl font-black text-gray-800">מלאי ירקות</h2>
+        <div class="flex items-center gap-2">
+          <button onclick="showInvTab(null)" class="text-gray-400 hover:text-gray-600 transition">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+          <h2 class="text-xl font-black text-gray-800">מלאי ירקות</h2>
+        </div>
         <div class="flex gap-2 flex-wrap">
-<button onclick="syncFromWorker()" id="btn-sync-worker"
+          <button onclick="syncFromWorker()" id="btn-sync-worker"
             class="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-2 rounded-xl font-bold text-sm">
             <i id="sync-worker-icon" class="fa-solid fa-rotate"></i> סנכרן מספירת עובד
           </button>
@@ -457,13 +485,20 @@
     <!-- Orders panel -->
     <div id="inv-panel-ord" class="hidden">
       <header class="flex justify-between items-center mb-4">
-        <button onclick="clearOrders()" class="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl font-bold border border-red-100 text-sm">
-          <i class="fa-solid fa-trash ml-1"></i> נקה
-        </button>
-        <h2 class="text-xl font-black text-gray-800">הזמנות</h2>
-        <div class="flex gap-1">
-          <button onclick="setOrdView('grid')" id="ord-btn-grid" class="vt-btn"><i class="fa-solid fa-grip"></i></button>
-          <button onclick="setOrdView('list')" id="ord-btn-list" class="vt-btn on"><i class="fa-solid fa-list"></i></button>
+        <div class="flex items-center gap-2">
+          <button onclick="showInvTab(null)" class="text-gray-400 hover:text-gray-600 transition">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+          <h2 class="text-xl font-black text-gray-800">הזמנות</h2>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="clearOrders()" class="bg-red-50 text-red-600 px-3 py-2 rounded-xl font-bold border border-red-100 text-sm">
+            <i class="fa-solid fa-trash ml-1"></i> נקה
+          </button>
+          <div class="flex gap-1">
+            <button onclick="setOrdView('grid')" id="ord-btn-grid" class="vt-btn"><i class="fa-solid fa-grip"></i></button>
+            <button onclick="setOrdView('list')" id="ord-btn-list" class="vt-btn on"><i class="fa-solid fa-list"></i></button>
+          </div>
         </div>
       </header>
       <button onclick="sendOrderToEliyahu()"
@@ -624,7 +659,7 @@ function switchView(id) {
   const viewMap = {
     'employees': ['employees', 'list'],
     'hours':     ['employees', 'hours'],
-    'inventory': ['inventory', 'inv'],
+    'inventory': ['inventory', null],
     'orders':    ['inventory', 'ord'],
   };
 
@@ -646,7 +681,7 @@ function switchView(id) {
 
   // Activate sub-panel
   if (parentView === 'employees') showEmpTab(subPanel || 'list', true);
-  if (parentView === 'inventory') showInvTab(subPanel || 'inv', true);
+  if (parentView === 'inventory') showInvTab(subPanel, true);
 
   // Load maintenance iframe on first visit
   if (parentView === 'maintenance' && !maintenanceLoaded) {
@@ -670,11 +705,12 @@ function showEmpTab(tab, silent = false) {
 }
 
 function showInvTab(tab, silent = false) {
+  const dashboard = document.getElementById('inv-dashboard');
+  if (dashboard) dashboard.classList.toggle('hidden', tab !== null);
+
   ['inv', 'ord'].forEach(t => {
     const panel = document.getElementById(`inv-panel-${t}`);
-    const btn   = document.getElementById(`inv-tab-${t}`);
     if (panel) panel.classList.toggle('hidden', t !== tab);
-    if (btn)   btn.classList.toggle('active', t === tab);
   });
 }
 
@@ -719,6 +755,7 @@ async function loadData() {
 
 function renderAll() {
   renderDashboard();
+  renderInvDashboardCards();
   populateDeptFilter();
   renderEmployees();
   renderHoursHistory();
@@ -726,6 +763,31 @@ function renderAll() {
   renderInventory();
   renderOrders();
   renderTasks();
+}
+
+function renderInvDashboardCards() {
+  const ok  = state.inventory.filter(i => Number(i.qty) >= Number(i.min));
+  const low = state.inventory.filter(i => Number(i.qty) < Number(i.min) && Number(i.min) > 0);
+  const total = state.inventory.length;
+
+  const statEl = document.getElementById('inv-card-stat');
+  if (statEl) statEl.textContent = total ? `${ok.length}/${total}` : '–';
+
+  const badge = document.getElementById('inv-card-low-badge');
+  if (badge) {
+    if (low.length) {
+      badge.textContent = `${low.length} חסרים`;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  const ordEl = document.getElementById('ord-card-stat');
+  if (ordEl) {
+    const withOrder = orders.filter(o => o.amountToOrder && Number(o.amountToOrder) > 0).length;
+    ordEl.textContent = withOrder || '0';
+  }
 }
 
 // ── Dashboard ────────────────────────────────────────────────────
