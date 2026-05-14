@@ -22,6 +22,7 @@ function doGet(e) {
         case 'saveNoteToEmployee': result = saveNoteToEmployee(payload); break;
         case 'deleteNoteFromEmployee': result = deleteNoteFromEmployee(payload); break;
         case 'syncFromYerakot':    result = syncFromYerakot();             break;
+        case 'debugSync':          result = debugSync();                   break;
         default: result = { status: 'error', message: 'Action not found: ' + action };
       }
       return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: result }))
@@ -224,6 +225,16 @@ function resetAllTasks() {
 }
 
 // ─── Yerakot Sync ─────────────────────────────────────────────────────────────
+
+// מחזיר את ה-IDs משני הגיליונות לצורך בדיקה
+function debugSync() {
+  const yerakotRows  = SpreadsheetApp.openById(YERAKOT_SHEET_ID).getSheetByName('inventory').getDataRange().getValues();
+  const biscottiRows = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('מלאי').getDataRange().getValues();
+  return {
+    yerakot:  yerakotRows.map(r => ({ id: r[0], qty: r[1] })),
+    biscotti: biscottiRows.map(r => ({ id: r[0], qty: r[1] }))
+  };
+}
 
 const YERAKOT_SHEET_ID = '1GLkHEZXCupy8__Gn173Lqa1CSB25Xwx2evHFsrfcm0k';
 
