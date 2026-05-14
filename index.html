@@ -481,19 +481,41 @@
 
   <!-- ═══ TASKS ══════════════════════════════════════════════════ -->
   <div id="view-tasks" class="app-view">
-    <header class="flex justify-between items-center mb-5">
-      <button onclick="resetTasks()" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100 text-sm">
-        נקה משימות
-      </button>
-      <div class="flex flex-col items-center gap-2">
-        <input type="date" id="tasks-date"
-          class="text-sm font-bold text-gray-700 border border-gray-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-green-400">
-        <button onclick="sendTasks()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black shadow-lg text-sm">
-          <i class="fa-brands fa-whatsapp ml-1"></i> שלח לדוד
-        </button>
-      </div>
-    </header>
-    <div id="tasks-grid" class="grid grid-cols-1 gap-3"></div>
+    <!-- Category tabs -->
+    <div class="sub-tabs">
+      <button class="sub-tab active" id="tasks-tab-david"    onclick="showTasksTab('david')">משימות לדוד</button>
+      <button class="sub-tab"        id="tasks-tab-personal" onclick="showTasksTab('personal')">משימות אישיות</button>
+    </div>
+
+    <!-- משימות לדוד -->
+    <div id="tasks-panel-david">
+      <header class="flex justify-between items-center mb-5">
+        <button onclick="resetTasks('david')" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100 text-sm">נקה</button>
+        <div class="flex flex-col items-center gap-2">
+          <input type="date" id="tasks-date-david"
+            class="text-sm font-bold text-gray-700 border border-gray-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-green-400">
+          <button onclick="sendTasks('david')" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black shadow-lg text-sm">
+            <i class="fa-brands fa-whatsapp ml-1"></i> שלח לדוד
+          </button>
+        </div>
+      </header>
+      <div id="tasks-grid-david" class="grid grid-cols-1 gap-3"></div>
+    </div>
+
+    <!-- משימות אישיות -->
+    <div id="tasks-panel-personal" class="hidden">
+      <header class="flex justify-between items-center mb-5">
+        <button onclick="resetTasks('personal')" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100 text-sm">נקה</button>
+        <div class="flex flex-col items-center gap-2">
+          <input type="date" id="tasks-date-personal"
+            class="text-sm font-bold text-gray-700 border border-gray-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-green-400">
+          <button onclick="sendTasks('personal')" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black shadow-lg text-sm">
+            <i class="fa-brands fa-whatsapp ml-1"></i> שלח
+          </button>
+        </div>
+      </header>
+      <div id="tasks-grid-personal" class="grid grid-cols-1 gap-3"></div>
+    </div>
   </div>
 
 </main>
@@ -557,7 +579,7 @@
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxaAORg5xUnEL_TIQ4q9PKvecn71KX18mF0t3daazQYkRNvnfSKSSeDL67rY1CqMqRdqw/exec';
 
-let state = { employees: [], hours: [], inventory: [], tasks: [] };
+let state = { employees: [], hours: [], inventory: [], tasks: [], tasksPersonal: [] };
 let orders = [];
 let selectedEmp = null;
 let empLayout = 'list';
@@ -670,7 +692,8 @@ async function loadData() {
     const data = await api('getBootstrap');
     state.employees = data.employees    || [];
     state.hours     = data.standardHours || [];
-    state.tasks     = data.tasks        || [];
+    state.tasks         = data.tasks         || [];
+    state.tasksPersonal = data.tasksPersonal || [];
 
     const invMap = new Map();
     (data.inventory || []).forEach(i => invMap.set(i.id.trim(), i));
@@ -727,8 +750,9 @@ function renderDashboard() {
     } else { alert.classList.add('hidden'); }
   }
 
-  const done = state.tasks.filter(t => t.checked).length;
-  setEl('dash-tasks-done', state.tasks.length ? `${done}/${state.tasks.length}` : '–');
+  const allTasks = [...state.tasks, ...state.tasksPersonal];
+  const done = allTasks.filter(t => t.checked).length;
+  setEl('dash-tasks-done', allTasks.length ? `${done}/${allTasks.length}` : '–');
 
   const curYM = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
   const reports = state.hours.filter(h => h.date && h.date.startsWith(curYM) && Number(h.sales) > 0);
@@ -1123,53 +1147,71 @@ async function syncFromWorker() {
 
 // ── Tasks ────────────────────────────────────────────────────────
 
+function showTasksTab(tab) {
+  ['david', 'personal'].forEach(t => {
+    document.getElementById(`tasks-panel-${t}`).classList.toggle('hidden', t !== tab);
+    document.getElementById(`tasks-tab-${t}`).classList.toggle('active', t === tab);
+  });
+}
+
 function renderTasks() {
-  const g = document.getElementById('tasks-grid'); if (!g) return;
+  renderTasksPanel('david');
+  renderTasksPanel('personal');
+}
+
+function renderTasksPanel(type) {
+  const tasks = type === 'david' ? state.tasks : state.tasksPersonal;
+  const g = document.getElementById(`tasks-grid-${type}`); if (!g) return;
   g.innerHTML = '';
-  const dateEl = document.getElementById('tasks-date');
+  const dateEl = document.getElementById(`tasks-date-${type}`);
   if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
 
-  state.tasks.forEach(t => {
+  tasks.forEach(t => {
     const c = document.createElement('div');
     c.className = `card flex items-center gap-4 shadow-sm border-gray-100 ${t.checked ? 'opacity-40 bg-gray-50' : ''}`;
     c.innerHTML = `
-      <input type="checkbox" ${t.checked ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-7 h-7 rounded-lg" style="accent-color:#16a34a;">
+      <input type="checkbox" ${t.checked ? 'checked' : ''} onchange="toggleTask('${type}',${t.id})" class="w-7 h-7 rounded-lg" style="accent-color:#16a34a;">
       <div class="flex-grow font-black text-gray-800">${t.name}</div>
-      <input type="number" value="${t.done || 0}" oninput="updateTaskDone(${t.id},this.value)" class="w-16 p-2 text-center border rounded-lg font-black text-green-700">`;
+      <input type="number" value="${t.done || 0}" oninput="updateTaskDone('${type}',${t.id},this.value)" class="w-16 p-2 text-center border rounded-lg font-black text-green-700">`;
     g.appendChild(c);
   });
 }
 
-async function toggleTask(id) {
-  const t = state.tasks.find(x => x.id === id); if (!t) return;
-  t.checked = !t.checked; renderTasks(); renderDashboard();
-  await api('updateTask', t);
+async function toggleTask(type, id) {
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
+  const t = list.find(x => x.id === id); if (!t) return;
+  t.checked = !t.checked; renderTasksPanel(type); renderDashboard();
+  await api(type === 'david' ? 'updateTask' : 'updateTaskPersonal', t);
 }
 
-async function updateTaskDone(id, v) {
-  const t = state.tasks.find(x => x.id === id); if (!t) return;
-  t.done = Number(v); t.checked = t.done > 0; renderTasks(); renderDashboard();
-  await api('updateTask', t);
+async function updateTaskDone(type, id, v) {
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
+  const t = list.find(x => x.id === id); if (!t) return;
+  t.done = Number(v); t.checked = t.done > 0; renderTasksPanel(type); renderDashboard();
+  await api(type === 'david' ? 'updateTask' : 'updateTaskPersonal', t);
 }
 
-async function resetTasks() {
+async function resetTasks(type) {
   if (!confirm('לאפס את כל המשימות ל-0?')) return;
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
   try {
-    await api('resetAllTasks');
-    state.tasks.forEach(t => { t.done = 0; t.checked = false; });
-    renderTasks(); renderDashboard();
+    await api(type === 'david' ? 'resetAllTasks' : 'resetAllTasksPersonal');
+    list.forEach(t => { t.done = 0; t.checked = false; });
+    renderTasksPanel(type); renderDashboard();
     showToast('משימות אופסו', '#1d4ed8');
   } catch(e) {}
 }
 
-function sendTasks() {
+function sendTasks(type) {
   const now = new Date();
   const timeStr = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-  const dateInput = document.getElementById('tasks-date');
+  const dateInput = document.getElementById(`tasks-date-${type}`);
   const picked = dateInput?.value ? new Date(dateInput.value) : now;
   const dateStr = picked.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
-  let text = `*משימות יומיות*\nתאריך: ${dateStr} | ${timeStr}\n\n`;
-  state.tasks.forEach(t => text += `${t.name}: ${t.done > 0 ? t.done : '0'}\n\n`);
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
+  const title = type === 'david' ? 'משימות יומיות' : 'משימות אישיות';
+  let text = `*${title}*\nתאריך: ${dateStr} | ${timeStr}\n\n`;
+  list.forEach(t => text += `${t.name}: ${t.done > 0 ? t.done : '0'}\n\n`);
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 }
 

@@ -17,8 +17,10 @@ function doGet(e) {
         case 'getBootstrap':       result = getBootstrap();              break;
         case 'saveEmployeeData':   result = saveEmployeeData(payload);   break;
         case 'updateInventory':    result = updateInventory(payload);    break;
-        case 'updateTask':         result = updateTask(payload);         break;
-        case 'resetAllTasks':      result = resetAllTasks();             break;
+        case 'updateTask':         result = updateTask(payload);                   break;
+        case 'resetAllTasks':      result = resetAllTasks();                       break;
+        case 'updateTaskPersonal': result = updateTaskPersonal(payload);           break;
+        case 'resetAllTasksPersonal': result = resetAllTasksPersonal();            break;
         case 'saveNoteToEmployee': result = saveNoteToEmployee(payload); break;
         case 'deleteNoteFromEmployee': result = deleteNoteFromEmployee(payload); break;
         case 'syncFromYerakot':    result = syncFromYerakot();             break;
@@ -50,7 +52,8 @@ function getBootstrap() {
     employees:     getSheetData(ss, 'ניהול עובדים'),
     standardHours: getSheetData(ss, 'שעות תקן'),
     inventory:     getSheetData(ss, 'מלאי'),
-    tasks:         getSheetData(ss, 'משימות לדוד')
+    tasks:         getSheetData(ss, 'משימות לדוד'),
+    tasksPersonal: getSheetData(ss, 'משימות אישיות')
   };
 }
 
@@ -76,7 +79,7 @@ function getSheetData(ss, name) {
     } else if (name === 'מלאי') {
       result.push({ id: r[0].toString().trim(), qty: r[1] || 0, timestamp: r[2], min: r[3] || 0 });
 
-    } else if (name === 'משימות לדוד') {
+    } else if (name === 'משימות לדוד' || name === 'משימות אישיות') {
       result.push({ id: i, name: r[0], done: r[1] || 0, checked: Number(r[1]) > 0 });
 
     } else if (name === 'ניהול עובדים') {
@@ -223,6 +226,28 @@ function updateTask(task) {
 
 function resetAllTasks() {
   const sheet = SpreadsheetApp.openById(BISCOTTI_SHEET_ID).getSheetByName('משימות לדוד');
+  if (!sheet) return { status: 'error' };
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 2, lastRow - 1, 1).setValues(Array(lastRow - 1).fill([0]));
+  }
+  return { status: 'success' };
+}
+
+function updateTaskPersonal(task) {
+  const sheet  = getOrCreateSheet(SpreadsheetApp.openById(BISCOTTI_SHEET_ID), 'משימות אישיות');
+  const data   = sheet.getDataRange().getValues();
+  let foundRow = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === task.name) { foundRow = i + 1; break; }
+  }
+  if (foundRow > -1) { sheet.getRange(foundRow, 2).setValue(task.done); }
+  else               { sheet.appendRow([task.name, task.done]); }
+  return { status: 'success' };
+}
+
+function resetAllTasksPersonal() {
+  const sheet = SpreadsheetApp.openById(BISCOTTI_SHEET_ID).getSheetByName('משימות אישיות');
   if (!sheet) return { status: 'error' };
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
