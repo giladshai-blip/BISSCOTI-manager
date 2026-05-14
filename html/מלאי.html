@@ -112,6 +112,15 @@
         }
     }
 
+    function shareWorkerApp() {
+        const url = 'https://giladshai-blip.github.io/BISSCOTI-manager/html/%D7%A2%D7%95%D7%91%D7%93-%D7%9E%D7%9C%D7%90%D7%99.html';
+        if (navigator.share) {
+            navigator.share({ title: 'ספירת מלאי ירקות', text: 'אפליקציית ספירת מלאי', url });
+        } else {
+            window.open(`https://wa.me/?text=${encodeURIComponent('אפליקציית ספירת מלאי ירקות:\n' + url)}`, '_blank');
+        }
+    }
+
     async function triggerSync() {
         const icon = document.getElementById('sync-icon');
         if (icon) icon.classList.add('animate-spin');
@@ -179,6 +188,10 @@
         <header class="flex flex-wrap gap-3 justify-between items-center mb-5">
             <h2 class="text-xl font-bold text-gray-800">מלאי ירקות</h2>
             <div class="flex gap-2">
+                <button onclick="shareWorkerApp()" id="btn-share-worker"
+                    class="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl font-bold shadow-sm text-sm hover:bg-green-600 transition">
+                    <i class="fa-solid fa-share-nodes"></i> שלח לעובד
+                </button>
                 <button onclick="syncFromWorker()" id="btn-sync-worker"
                     class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-sm text-sm hover:bg-blue-700 transition">
                     <i id="sync-worker-icon" class="fa-solid fa-rotate"></i> סנכרן מספירת עובד
