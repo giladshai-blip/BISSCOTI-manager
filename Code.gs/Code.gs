@@ -45,7 +45,7 @@ function doPost(e) { return doGet(e); }
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 function getBootstrap() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(BISCOTTI_SHEET_ID);
   return {
     employees:     getSheetData(ss, 'ניהול עובדים'),
     standardHours: getSheetData(ss, 'שעות תקן'),
@@ -116,7 +116,7 @@ function getSheetData(ss, name) {
 // ─── Employees ────────────────────────────────────────────────────────────────
 
 function saveEmployeeData(emp) {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const ss    = SpreadsheetApp.openById(BISCOTTI_SHEET_ID);
   const sheet = getOrCreateSheet(ss, 'ניהול עובדים');
   const data  = sheet.getDataRange().getValues();
 
@@ -147,7 +147,7 @@ function saveEmployeeData(emp) {
 }
 
 function saveNoteToEmployee(data) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ניהול עובדים');
+  const sheet = SpreadsheetApp.openById(BISCOTTI_SHEET_ID).getSheetByName('ניהול עובדים');
   const rows  = sheet.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][2] && rows[i][2].toString() === data.employeeId.toString()) {
@@ -162,7 +162,7 @@ function saveNoteToEmployee(data) {
 
 function deleteNoteFromEmployee(payload) {
   const { empId, noteIndex } = payload;
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ניהול עובדים');
+  const sheet = SpreadsheetApp.openById(BISCOTTI_SHEET_ID).getSheetByName('ניהול עובדים');
   const rows  = sheet.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][2] && rows[i][2].toString() === empId.toString()) {
@@ -179,7 +179,7 @@ function deleteNoteFromEmployee(payload) {
 
 function updateInventory(payload) {
   const { id, qty, min } = payload;
-  const sheet    = getOrCreateSheet(SpreadsheetApp.getActiveSpreadsheet(), 'מלאי');
+  const sheet    = getOrCreateSheet(SpreadsheetApp.openById(BISCOTTI_SHEET_ID), 'מלאי');
   const data     = sheet.getDataRange().getValues();
   const ts       = new Date().toLocaleString('he-IL');
   let foundRow   = -1;
@@ -201,7 +201,7 @@ function updateInventory(payload) {
 // ─── Tasks ────────────────────────────────────────────────────────────────────
 
 function updateTask(task) {
-  const sheet  = getOrCreateSheet(SpreadsheetApp.getActiveSpreadsheet(), 'משימות לדוד');
+  const sheet  = getOrCreateSheet(SpreadsheetApp.openById(BISCOTTI_SHEET_ID), 'משימות לדוד');
   const data   = sheet.getDataRange().getValues();
   let foundRow = -1;
 
@@ -215,7 +215,7 @@ function updateTask(task) {
 }
 
 function resetAllTasks() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('משימות לדוד');
+  const sheet = SpreadsheetApp.openById(BISCOTTI_SHEET_ID).getSheetByName('משימות לדוד');
   if (!sheet) return { status: 'error' };
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
@@ -229,14 +229,15 @@ function resetAllTasks() {
 // מחזיר את ה-IDs משני הגיליונות לצורך בדיקה
 function debugSync() {
   const yerakotRows  = SpreadsheetApp.openById(YERAKOT_SHEET_ID).getSheetByName('inventory').getDataRange().getValues();
-  const biscottiRows = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('מלאי').getDataRange().getValues();
+  const biscottiRows = SpreadsheetApp.openById(BISCOTTI_SHEET_ID).getSheetByName('מלאי').getDataRange().getValues();
   return {
     yerakot:  yerakotRows.map(r => ({ id: r[0], qty: r[1] })),
     biscotti: biscottiRows.map(r => ({ id: r[0], qty: r[1] }))
   };
 }
 
-const YERAKOT_SHEET_ID = '1GLkHEZXCupy8__Gn173Lqa1CSB25Xwx2evHFsrfcm0k';
+const YERAKOT_SHEET_ID  = '1GLkHEZXCupy8__Gn173Lqa1CSB25Xwx2evHFsrfcm0k';
+const BISCOTTI_SHEET_ID = '17PNmqOGJrKwqgjUkwFGzGnEBHIDn9UfowLtNflJvYiU';
 
 // מסנכרן כמויות מספירת עובד (yerakot) לגיליון המלאי של ביסקוטי
 function syncFromYerakot() {
@@ -244,7 +245,7 @@ function syncFromYerakot() {
   if (!yerakotSheet) return { status: 'error', message: 'yerakot inventory sheet not found' };
 
   const yerakotRows = yerakotSheet.getDataRange().getValues(); // [id, qty, timestamp]
-  const biscottiSheet = getOrCreateSheet(SpreadsheetApp.getActiveSpreadsheet(), 'מלאי');
+  const biscottiSheet = getOrCreateSheet(SpreadsheetApp.openById(BISCOTTI_SHEET_ID), 'מלאי');
   const biscottiRows  = biscottiSheet.getDataRange().getValues();
 
   let updated = 0;
