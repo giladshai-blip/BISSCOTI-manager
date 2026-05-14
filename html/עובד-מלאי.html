@@ -333,7 +333,10 @@
     openCard = null;
     try {
       const data = await api('getBootstrap');
-      items = (data.inventory || []).map(i => ({ ...i, counted: false }));
+      // deduplicate by id — keep last entry (most recent row in sheet)
+      const seen = new Map();
+      (data.inventory || []).forEach(i => seen.set(i.id, i));
+      items = [...seen.values()].map(i => ({ ...i, counted: false }));
       renderItems();
     } catch (e) {
       document.getElementById('items-list').innerHTML =
