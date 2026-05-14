@@ -21,6 +21,7 @@ function doGet(e) {
         case 'resetAllTasks':      result = resetAllTasks();             break;
         case 'saveNoteToEmployee': result = saveNoteToEmployee(payload); break;
         case 'deleteNoteFromEmployee': result = deleteNoteFromEmployee(payload); break;
+        case 'syncFromYerakot':    result = syncFromYerakot();             break;
         default: result = { status: 'error', message: 'Action not found: ' + action };
       }
       return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: result }))
@@ -220,6 +221,46 @@ function resetAllTasks() {
     sheet.getRange(2, 2, lastRow - 1, 1).setValues(Array(lastRow - 1).fill([0]));
   }
   return { status: 'success' };
+}
+
+// ─── Yerakot Sync ─────────────────────────────────────────────────────────────
+
+const YERAKOT_SHEET_ID = '1GLkHEZXCupy8__Gn173Lqa1CSB25Xwx2evHFsrfcm0k';
+
+// מסנכרן כמויות מספירת עובד (yerakot) לגיליון המלאי של ביסקוטי
+function syncFromYerakot() {
+  const yerakotSheet = SpreadsheetApp.openById(YERAKOT_SHEET_ID).getSheetByName('inventory');
+  if (!yerakotSheet) return { status: 'error', message: 'yerakot inventory sheet not found' };
+
+  const yerakotRows = yerakotSheet.getDataRange().getValues(); // [id, qty, timestamp]
+  const biscottiSheet = getOrCreateSheet(SpreadsheetApp.getActiveSpreadsheet(), 'מלאי');
+  const biscottiRows  = biscottiSheet.getDataRange().getValues();
+
+  let updated = 0;
+
+  for (let y = 1; y < yerakotRows.length; y++) {
+    const id  = yerakotRows[y][0];
+    const qty = Number(yerakotRows[y][1]);
+    const ts  = yerakotRows[y][2] || new Date().toLocaleString('he-IL');
+
+    let found = false;
+    for (let b = 1; b < biscottiRows.length; b++) {
+      if (biscottiRows[b][0] && biscottiRows[b][0].toString() === id.toString()) {
+        biscottiSheet.getRange(b + 1, 2).setValue(qty);
+        biscottiSheet.getRange(b + 1, 3).setValue(ts);
+        found = true;
+        updated++;
+        break;
+      }
+    }
+    // פריט חדש שלא קיים במלאי ביסקוטי — מוסיף שורה
+    if (!found) {
+      biscottiSheet.appendRow([id, qty, ts, 0]);
+      updated++;
+    }
+  }
+
+  return { status: 'success', updated };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

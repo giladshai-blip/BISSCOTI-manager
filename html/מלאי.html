@@ -176,12 +176,20 @@
 
     <!-- Inventory View -->
     <div id="view-inventory" class="view block">
-        <header class="flex justify-between items-center mb-5">
+        <header class="flex flex-wrap gap-3 justify-between items-center mb-5">
             <h2 class="text-xl font-bold text-gray-800">מלאי ירקות</h2>
-            <button onclick="toggleEditMin()" id="btn-edit-min" class="bg-white border px-4 py-2 rounded-xl font-bold text-gray-600 shadow-sm text-sm">
-                <i class="fa-solid fa-pen-to-square ml-1"></i> ערוך מינימום
-            </button>
+            <div class="flex gap-2">
+                <button onclick="syncFromWorker()" id="btn-sync-worker"
+                    class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-sm text-sm hover:bg-blue-700 transition">
+                    <i id="sync-worker-icon" class="fa-solid fa-rotate"></i> סנכרן מספירת עובד
+                </button>
+                <button onclick="toggleEditMin()" id="btn-edit-min"
+                    class="bg-white border px-4 py-2 rounded-xl font-bold text-gray-600 shadow-sm text-sm">
+                    <i class="fa-solid fa-pen-to-square ml-1"></i> ערוך מינימום
+                </button>
+            </div>
         </header>
+        <div id="sync-worker-status" class="hidden mb-4 p-3 rounded-xl text-sm font-bold text-center"></div>
         <div id="inventory-grid" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
     </div>
 
@@ -210,6 +218,31 @@
         document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
         document.querySelectorAll(`[data-nav="${id}"]`).forEach(n => n.classList.add('active'));
         window.scrollTo(0, 0);
+    }
+
+    async function syncFromWorker() {
+        const icon   = document.getElementById('sync-worker-icon');
+        const btn    = document.getElementById('btn-sync-worker');
+        const status = document.getElementById('sync-worker-status');
+
+        icon.classList.add('animate-spin');
+        btn.disabled = true;
+        status.className = 'mb-4 p-3 rounded-xl text-sm font-bold text-center bg-blue-50 text-blue-700';
+        status.textContent = 'מסנכרן עם ספירת עובד...';
+
+        try {
+            const res = await api('syncFromYerakot');
+            status.className = 'mb-4 p-3 rounded-xl text-sm font-bold text-center bg-green-50 text-green-700';
+            status.textContent = `✓ סונכרן בהצלחה — ${res.updated} פריטים עודכנו`;
+            await loadData();
+            setTimeout(() => { status.className = 'hidden'; }, 4000);
+        } catch (e) {
+            status.className = 'mb-4 p-3 rounded-xl text-sm font-bold text-center bg-red-50 text-red-700';
+            status.textContent = 'שגיאה בסנכרון — בדוק הרשאות ב-Apps Script';
+        }
+
+        icon.classList.remove('animate-spin');
+        btn.disabled = false;
     }
 
     function toggleEditMin() {
