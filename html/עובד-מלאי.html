@@ -280,23 +280,22 @@
   const WHATSAPP_NUMBER = '972526664040';
 
   const VEGE_MAP = {
-    'tomato':       { en: 'Tomato',         emoji: '🍅', bg: '#fef2f2' },
-    'eggplant':     { en: 'Eggplant',       emoji: '🍆', bg: '#faf5ff' },
-    'zucchini':     { en: 'Zucchini',       emoji: '🥒', bg: '#f0fdf4' },
-    'cherry':       { en: 'Cherry Tomatoes',emoji: '🍅', bg: '#fef2f2' },
-    'greenonion':   { en: 'Green Onion',    emoji: '🌱', bg: '#f0fdf4' },
-    'purpleonion':  { en: 'Purple Onion',   emoji: '🧅', bg: '#fdf4ff' },
-    'chard':        { en: 'Chard',          emoji: '🥬', bg: '#f0fdf4' },
-    'basil':        { en: 'Basil',          emoji: '🌿', bg: '#f0fdf4' },
-    'spinach':      { en: 'Spinach',        emoji: '🥬', bg: '#f0fdf4' },
-    'redpepper':    { en: 'Red Pepper',     emoji: '🌶️', bg: '#fef2f2' },
-    'yellowpepper': { en: 'Yellow Pepper',  emoji: '🫑', bg: '#fefce8' },
-    'parsley':      { en: 'Parsley',        emoji: '🌿', bg: '#f0fdf4' },
+    'ארגז עגבניות': { en: 'Tomato Box',      emoji: '🍅', bg: '#fef2f2' },
+    'חצילים':       { en: 'Eggplant',         emoji: '🍆', bg: '#faf5ff' },
+    'זוקיני':        { en: 'Zucchini',         emoji: '🥒', bg: '#f0fdf4' },
+    'שרי':           { en: 'Cherry Tomatoes',  emoji: '🍅', bg: '#fef2f2' },
+    'בצל ירוק':     { en: 'Green Onion',       emoji: '🌱', bg: '#f0fdf4' },
+    'בצל סגול':     { en: 'Purple Onion',      emoji: '🧅', bg: '#fdf4ff' },
+    'מנגולד':        { en: 'Chard',             emoji: '🥬', bg: '#f0fdf4' },
+    'בזיליקום':      { en: 'Basil',             emoji: '🌿', bg: '#f0fdf4' },
+    'תרד':           { en: 'Spinach',           emoji: '🥬', bg: '#f0fdf4' },
+    'פלפל אדום':    { en: 'Red Pepper',        emoji: '🌶️', bg: '#fef2f2' },
+    'פלפל צהוב':    { en: 'Yellow Pepper',     emoji: '🫑', bg: '#fefce8' },
+    'פטרוזיליה':     { en: 'Parsley',           emoji: '🌿', bg: '#f0fdf4' },
   };
 
   function getVegeInfo(id) {
-    const key = id.toLowerCase().trim();
-    return VEGE_MAP[key] || { en: id, emoji: '🥬', bg: '#f0fdf4' };
+    return VEGE_MAP[id.trim()] || { en: id, emoji: '🥬', bg: '#f0fdf4' };
   }
 
   function getStatus(qty, min) {
@@ -485,7 +484,7 @@
       const status = getStatus(Number(item.qty), Number(item.min));
       const icon   = status === 'critical' ? '🔴' : status === 'low' ? '🟡' : '🟢';
       const info   = getVegeInfo(item.id);
-      lines.push(`${icon} ${info.en}: *${item.qty}* cartons`);
+      lines.push(`${icon} ${item.id}: *${item.qty}* ארגזים`);
     });
 
     const counted  = items.filter(i => i.counted).length;
