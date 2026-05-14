@@ -264,20 +264,52 @@
         if (!g) return;
         g.innerHTML = '';
         orders.forEach(o => {
-            const inv = inventory.find(i => i.id === o.id) || { qty: '?', min: '?' };
-            const low = Number(inv.qty) < Number(inv.min);
+            const inv  = inventory.find(i => i.id === o.id) || { qty: 0, min: 0 };
+            const cur  = Number(inv.qty) || 0;
+            const min  = Number(inv.min) || 0;
+            const ord  = Number(o.amountToOrder) || 0;
+            const after = cur + ord;
+            const low  = cur < min;
+            const okAfter = after >= min;
+
             const c = document.createElement('div');
-            c.className = `card flex items-center justify-between p-4 ${low ? 'bg-orange-50 border-orange-200' : 'border-gray-100 shadow-sm'}`;
+            c.className = `card p-4 ${low ? 'bg-orange-50 border-orange-200' : 'border-gray-100 shadow-sm'}`;
             c.innerHTML = `
-                <div class="text-right">
+                <div class="flex items-center justify-between mb-3">
                     <h4 class="font-black text-gray-800">${o.id}</h4>
-                    <p class="text-[10px] text-gray-400 font-bold">במלאי: ${inv.qty} ${low ? '⚠️' : ''}</p>
+                    ${low ? '<span class="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black">חסר</span>' : ''}
                 </div>
-                <input type="number" placeholder="0" value="${o.amountToOrder}"
-                    oninput="orders.find(x=>x.id==='${o.id}').amountToOrder=this.value"
-                    class="w-20 text-center font-black text-blue-700 border-2 border-blue-200 bg-white p-2 rounded-xl shadow-sm outline-none focus:border-blue-500 transition">`;
+                <div class="flex items-center justify-between gap-3">
+                    <div class="text-right space-y-1 flex-grow">
+                        <div class="flex justify-between text-xs font-bold text-gray-500">
+                            <span>מלאי כעת:</span>
+                            <span class="font-black ${low ? 'text-orange-600' : 'text-gray-700'}">${cur}</span>
+                        </div>
+                        <div class="flex justify-between text-xs font-bold text-gray-500">
+                            <span>אחרי הזמנה:</span>
+                            <span id="after-${o.id}" class="font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}">${after}</span>
+                        </div>
+                    </div>
+                    <input type="number" placeholder="0" value="${o.amountToOrder || ''}"
+                        oninput="updateOrderAmount('${o.id}', this.value)"
+                        class="w-20 text-center font-black text-blue-700 border-2 border-blue-200 bg-white p-2 rounded-xl shadow-sm outline-none focus:border-blue-500 transition flex-shrink-0">
+                </div>`;
             g.appendChild(c);
         });
+    }
+
+    function updateOrderAmount(id, val) {
+        const o = orders.find(x => x.id === id);
+        if (!o) return;
+        o.amountToOrder = val;
+        const inv   = inventory.find(i => i.id === id) || { qty: 0, min: 0 };
+        const after = (Number(inv.qty) || 0) + (Number(val) || 0);
+        const okAfter = after >= (Number(inv.min) || 0);
+        const el = document.getElementById(`after-${id}`);
+        if (el) {
+            el.textContent = after;
+            el.className = `font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}`;
+        }
     }
 
     function sendOrderToEliyahu() {
