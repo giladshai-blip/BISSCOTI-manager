@@ -80,9 +80,14 @@
             <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-yellow-400 font-black">B</div>
             <span class="text-xl font-bold">ביסקוטי</span>
         </div>
-        <button onclick="triggerSync()" class="text-green-600 bg-green-50 w-9 h-9 rounded-full flex items-center justify-center border border-green-100">
-            <i id="sync-icon-mobile" class="fa-solid fa-arrows-rotate"></i>
-        </button>
+        <div class="flex items-center gap-2">
+            <a href="https://giladshai-blip.github.io/BISSCOTI-manager/" class="text-gray-500 bg-gray-100 w-9 h-9 rounded-full flex items-center justify-center border border-gray-200">
+                <i class="fa-solid fa-house"></i>
+            </a>
+            <button onclick="triggerSync()" class="text-green-600 bg-green-50 w-9 h-9 rounded-full flex items-center justify-center border border-green-100">
+                <i id="sync-icon-mobile" class="fa-solid fa-arrows-rotate"></i>
+            </button>
+        </div>
     </header>
 
     <nav class="mobile-nav">
@@ -108,8 +113,11 @@
             <a onclick="switchView('inventory')" data-nav="inventory" class="nav-item"><i class="fa-solid fa-box w-5"></i> <span>מלאי ירקות</span></a>
             <a onclick="switchView('orders')" data-nav="orders" class="nav-item"><i class="fa-solid fa-basket-shopping w-5"></i> <span class="text-blue-600 font-bold">הזמנת ירקות</span></a>
         </div>
-        <div class="p-6 border-t mt-auto text-center">
-            <p id="sync-time-desktop" class="text-[10px] text-gray-400 mb-2"></p>
+        <div class="p-6 border-t mt-auto text-center space-y-2">
+            <a href="https://giladshai-blip.github.io/BISSCOTI-manager/" class="w-full flex items-center justify-center gap-2 p-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition font-bold">
+                <i class="fa-solid fa-house"></i> דף הבית
+            </a>
+            <p id="sync-time-desktop" class="text-[10px] text-gray-400"></p>
             <button onclick="triggerSync()" class="w-full flex items-center justify-center gap-2 p-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition font-bold">
                 <i id="sync-icon-desktop" class="fa-solid fa-arrows-rotate"></i> סנכרן נתונים
             </button>
