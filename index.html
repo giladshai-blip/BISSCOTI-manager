@@ -61,6 +61,8 @@
     }
     .sidebar-item:hover { background: #f1f5f9; color: #0f172a; }
     .sidebar-item.active { background: #f0fdf4; color: var(--green); font-weight: 800; }
+    .sidebar-item.coming-soon { opacity: 0.5; cursor: default; pointer-events: none; }
+    .badge-soon { font-size: 9px; font-weight: 900; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 6px; margin-right: auto; letter-spacing: 0.3px; }
     .sidebar-item .si-icon {
       width: 32px; height: 32px; border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
@@ -223,6 +225,9 @@
     <button class="sidebar-item" data-nav="recipes" onclick="switchView('recipes')">
       <div class="si-icon"><i class="fa-solid fa-book-open"></i></div><span>מתכונים</span>
     </button>
+    <button class="sidebar-item coming-soon" disabled>
+      <div class="si-icon"><i class="fa-solid fa-book-bookmark"></i></div><span>ספר מתכונים קישים</span><span class="badge-soon">בקרוב</span>
+    </button>
     <button class="sidebar-item" data-nav="tasks" onclick="switchView('tasks')">
       <div class="si-icon"><i class="fa-solid fa-list-check"></i></div><span>משימות</span>
     </button>
@@ -341,6 +346,14 @@
         <div class="font-black text-gray-800 text-sm">מתכונים</div>
         <div class="text-xs text-gray-400 mt-0.5">ניהול מתכוני ייצור</div>
       </button>
+      <div class="card text-right opacity-50" style="cursor:default;">
+        <div class="flex items-start justify-between mb-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 flex-shrink-0"><i class="fa-solid fa-book-bookmark"></i></div>
+          <span style="font-size:9px;font-weight:900;background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;padding:2px 7px;border-radius:6px;">בקרוב</span>
+        </div>
+        <div class="font-black text-gray-500 text-sm">ספר מתכונים קישים</div>
+        <div class="text-xs text-gray-400 mt-0.5">מאגר מתכוני קישים</div>
+      </div>
       <a href="html/עובד-מלאי.html" target="_blank" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5" style="text-decoration:none;color:inherit;border:1px solid #e2e8f0;">
         <div class="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 mb-3"><i class="fa-solid fa-person-circle-check"></i></div>
         <div class="font-black text-gray-800 text-sm">אפליקציית עובד</div>
