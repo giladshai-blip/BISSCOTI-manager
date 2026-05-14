@@ -42,7 +42,9 @@ function doGet(e) {
         tasks: getMappedData('משימות לדוד')
       });
     }
-    return jsonResponse({ status: 'error', message: 'Unknown action' });
+    // ללא action – מציג דף סטטוס ה-API
+    if (!action) return HtmlService.createHtmlOutputFromFile('index');
+    return jsonResponse({ status: 'error', message: 'Unknown action: ' + action });
   } catch (err) {
     return jsonResponse({ status: 'error', message: err.toString() });
   }
