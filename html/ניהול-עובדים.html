@@ -58,7 +58,7 @@
 
     <script>
         const APP_URL = 'https://script.google.com/macros/s/AKfycbyLzwfk5IMJemmR-SUVasv_X8UXUZ40xczKANq5x5IjwHJc8k4Y4gJQmecpivlk8Fq5Rw/exec';
-        let state = { employees: [], hours: [], inventory: [], tasks: [], orders: [], selectedEmp: null };
+        let state = { employees: [], hours: [], inventory: [], tasks: [], selectedEmp: null };
         let displayModes = { employees: false, inventory: false };
         let layouts = { employees: 'list', orders: 'list' };
 
@@ -95,8 +95,6 @@
         <button onclick="switchView('employees')" data-nav="employees" class="mobile-nav-item"><i class="fa-solid fa-users text-lg"></i><span>עובדים</span></button>
         <button onclick="switchView('hours')" data-nav="hours" class="mobile-nav-item"><i class="fa-solid fa-clock text-lg"></i><span>שעות</span></button>
         <button onclick="switchView('tasks')" data-nav="tasks" class="mobile-nav-item"><i class="fa-solid fa-list-check text-lg"></i><span>משימות</span></button>
-        <button onclick="switchView('inventory')" data-nav="inventory" class="mobile-nav-item"><i class="fa-solid fa-box text-lg"></i><span>מלאי</span></button>
-        <button onclick="switchView('orders')" data-nav="orders" class="mobile-nav-item"><i class="fa-solid fa-cart-plus text-lg"></i><span>הזמנות</span></button>
     </nav>
 
     <!-- 💻 Desktop Sidebar -->
@@ -110,8 +108,6 @@
             <a onclick="switchView('employees')" data-nav="employees" class="nav-item"><i class="fa-solid fa-users w-5"></i> <span>עובדים ו-CRM</span></a>
             <a onclick="switchView('hours')" data-nav="hours" class="nav-item"><i class="fa-solid fa-clock w-5"></i> <span>שעות תקן</span></a>
             <a onclick="switchView('tasks')" data-nav="tasks" class="nav-item"><i class="fa-solid fa-check-double w-5"></i> <span>משימות לדוד</span></a>
-            <a onclick="switchView('inventory')" data-nav="inventory" class="nav-item"><i class="fa-solid fa-box w-5"></i> <span>מלאי ירקות</span></a>
-            <a onclick="switchView('orders')" data-nav="orders" class="nav-item"><i class="fa-solid fa-basket-shopping w-5"></i> <span class="text-blue-600 font-bold">הזמנת ירקות</span></a>
         </div>
         <div class="p-6 border-t mt-auto text-center space-y-2">
             <a href="https://giladshai-blip.github.io/BISSCOTI-manager/" class="w-full flex items-center justify-center gap-2 p-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition font-bold">
@@ -237,24 +233,6 @@
             <div id="tasks-grid" class="grid grid-cols-1 gap-3"></div>
         </div>
 
-        <!-- Inventory View -->
-        <div id="view-inventory" class="view hidden">
-            <header class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-800">מלאי קישים</h2>
-                <button onclick="toggleDisplayMode('inventory')" class="bg-white border px-4 py-2 rounded-lg font-bold text-gray-600 shadow-sm">ערוך מינימום</button>
-            </header>
-            <div id="inventory-grid" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
-        </div>
-
-        <!-- Orders View -->
-        <div id="view-orders" class="view hidden">
-            <header class="flex justify-between items-center mb-6">
-                <button onclick="clearOrders()" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100">נקה הכל</button>
-                <button onclick="sendOrderToEliyahu()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg"><i class="fa-brands fa-whatsapp mr-1"></i> שלח לאליהו</button>
-            </header>
-            <div id="orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-        </div>
-
     </main>
 
     <!-- CRM Modal -->
@@ -327,16 +305,6 @@
                 state.inventory = data.inventory || [];
                 state.tasks = data.tasks || [];
 
-                if (state.orders.length === 0) {
-                    state.orders = state.inventory.map(i => ({ id: i.id, amountToOrder: "" }));
-                } else {
-                    state.inventory.forEach(invItem => {
-                        if (!state.orders.find(o => o.id === invItem.id)) {
-                            state.orders.push({ id: invItem.id, amountToOrder: "" });
-                        }
-                    });
-                }
-
                 const now = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
                 if(syncD) syncD.innerHTML = `<i class="fa-solid fa-check-circle text-green-500"></i> סונכרן ${now}`;
                 if(syncM) syncM.innerHTML = `עודכן ${now}`;
@@ -391,17 +359,6 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         }
 
-        function sendOrderToEliyahu() {
-            const orders = state.orders.filter(o => o.amountToOrder > 0);
-            if (!orders.length) return showToast("לא הוזנו כמויות", 'bg-red-600');
-            const dateStr = new Date().toLocaleDateString('he-IL');
-            let text = `*הזמנת ירקות מחלקת קישים*\nתאריך: ${dateStr}\n\n`;
-            orders.forEach(o => text += `${o.id}: ${o.amountToOrder}\n\n`);
-            window.open(`https://wa.me/972524048099?text=${encodeURIComponent(text)}`, '_blank');
-        }
-
-        function clearOrders() { if(confirm("לנקות את ההזמנה?")) { state.orders.forEach(o => o.amountToOrder = ""); renderOrders(); } }
-
         function calculateSeniority(d) {
             if (!d) return "-";
             const s = new Date(d), n = new Date(); if (isNaN(s.getTime())) return "-";
@@ -429,19 +386,6 @@
                     c.className = 'card cursor-pointer hover:border-blue-300 shadow-sm text-right';
                     c.innerHTML = `<div class="flex justify-between items-start mb-4"><div><h4 class="font-black">${e.name}</h4><p class="text-xs opacity-50">${e.position}</p></div><span class="bg-blue-50 text-blue-700 text-lg px-2 py-1 rounded-xl font-black border border-blue-100">#${e.id}</span></div><div class="text-xs space-y-1 mb-4 font-medium"><div><i class="fa-solid fa-clock ml-2 opacity-30"></i> התחלה: ${e.startTime || "--:--"}</div><div><i class="fa-solid fa-calendar ml-2 opacity-30"></i> וותק: ${calculateSeniority(e.startDate)}</div></div><div class="flex justify-between items-center pt-3 border-t"> <span class="text-[10px] opacity-40 font-bold"><i class="fa-solid fa-note-sticky ml-1"></i>${e.notes.length} הערות</span> ${e.phone ? `<a href="tel:${e.phone}" class="text-blue-600 text-lg" onclick="event.stopPropagation()"><i class="fa-solid fa-phone"></i></a>` : ''} </div>`;
                 }
-                grid.appendChild(c);
-            });
-        }
-
-        function renderOrders() {
-            const grid = document.getElementById('orders-grid'); if(!grid) return;
-            grid.innerHTML = '';
-            state.orders.forEach(o => {
-                const inv = state.inventory.find(i => i.id === o.id) || {qty: '?', min: '?'};
-                const low = Number(inv.qty) < Number(inv.min);
-                const c = document.createElement('div');
-                c.className = `card flex items-center justify-between p-4 ${low ? 'bg-orange-50 border-orange-200' : 'border-gray-100 shadow-sm'}`;
-                c.innerHTML = `<div class="w-1/2 text-right"><h4 class="font-black text-gray-800">${o.id}</h4><p class="text-[10px] text-gray-400 font-bold">במלאי: ${inv.qty}</p></div><input type="number" placeholder="0" value="${o.amountToOrder}" oninput="state.orders.find(x=>x.id==='${o.id}').amountToOrder=this.value" class="w-20 text-center font-black text-blue-700 border-2 border-blue-200 bg-white p-2 rounded-xl shadow-sm outline-none focus:border-blue-500 transition">`;
                 grid.appendChild(c);
             });
         }
@@ -580,22 +524,6 @@
         async function updateTaskDone(id, v) { const t = state.tasks.find(x=>x.id===id); if(t) { t.done = Number(v); t.checked = (t.done > 0); renderTasks(); await runServer('updateTask', t); } }
         async function resetTasks() { if(confirm('לאפס את כל המשימות ל-0?')) { try { await runServer('resetAllTasks'); state.tasks.forEach(t=>{t.done=0;t.checked=false;}); renderTasks(); showToast("משימות אופסו", "bg-blue-600"); } catch(e){} } }
 
-        function renderInventory() {
-            const g = document.getElementById('inventory-grid'); if(!g) return;
-            g.innerHTML = '';
-            state.inventory.forEach(i => {
-                const low = Number(i.qty) < Number(i.min);
-                const c = document.createElement('div'); c.className = `card shadow-sm ${low ? 'border-orange-300 bg-orange-50' : 'border-gray-100'}`;
-                c.innerHTML = `<div class="flex justify-between items-center mb-3"><h4 class="font-black text-gray-800 text-right">${i.id}</h4><span class="text-[10px] px-2 py-1 rounded-lg font-black ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span></div><div class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600"><span>מלאי נוכחי:</span><input type="number" value="${i.qty}" oninput="updateInv('${i.id}', this.value, undefined)" class="w-20 p-1 border rounded-lg font-black text-blue-700 bg-white"></div><div class="flex items-center justify-between gap-2 text-xs mt-3 opacity-50 font-bold"><span>מינימום:</span><input type="number" value="${i.min}" oninput="updateInv('${i.id}', undefined, this.value)" class="w-20 p-1 border rounded-lg"></div>`;
-                g.appendChild(c);
-            });
-        }
-        async function updateInv(id, q, m) {
-            const i = state.inventory.find(x=>x.id===id); if(!i) return;
-            if(q!==undefined) i.qty = q; if(m!==undefined) i.min = m; renderInventory(); renderOrders(); updateGauges();
-            await runServer('updateInventory', {id: i.id, qty: i.qty, min: i.min});
-        }
-
         function populateDeptFilter() {
             const s = document.getElementById('emp-filter-dept'); if(!s) return;
             const d = [...new Set(state.employees.map(e => e.position))].filter(Boolean).sort();
@@ -617,8 +545,6 @@
             renderEmployees();
             renderHoursHistory();
             renderTasks();
-            renderInventory();
-            renderOrders();
             updateGauges();
             updateShiftCalc();
         }
