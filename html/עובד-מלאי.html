@@ -329,7 +329,9 @@
     return json.data;
   }
 
-  let syncing = false;
+  let syncing  = false;
+  let items    = [];
+  let openCard = null;
 
   async function loadItems() {
     if (syncing) return;
