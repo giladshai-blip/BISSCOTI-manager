@@ -319,42 +319,34 @@
     setTimeout(() => t.style.display = 'none', 2000);
   }
 
-  async function api(action, payload = null, attempt = 1) {
+  async function api(action, payload = null) {
     const url = `${GAS_URL}?action=${action}&payload=${encodeURIComponent(JSON.stringify(payload))}&t=${Date.now()}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000); // 12s timeout
-    try {
-      const res  = await fetch(url, { redirect: 'follow', signal: controller.signal });
-      clearTimeout(timeout);
-      const json = await res.json();
-      if (json.status === 'error') throw new Error(json.message);
-      return json.data;
-    } catch (e) {
-      clearTimeout(timeout);
-      if (attempt < 3) {
-        await new Promise(r => setTimeout(r, 2000 * attempt)); // wait 2s, 4s
-        return api(action, payload, attempt + 1);
-      }
-      throw e;
-    }
+    const res  = await fetch(url, { redirect: 'follow' });
+    const json = await res.json();
+    if (json.status === 'error') throw new Error(json.message);
+    return json.data;
   }
 
+  let syncing = false;
+
   async function loadItems() {
+    if (syncing) return;
+    syncing = true;
     const icon = document.getElementById('sync-icon');
     icon.classList.add('fa-spin');
     openCard = null;
     try {
       const data = await api('getBootstrap');
-      // deduplicate by id — keep last entry (most recent row in sheet)
       const seen = new Map();
       (data.inventory || []).forEach(i => seen.set(i.id, i));
       items = [...seen.values()].map(i => ({ ...i, counted: false }));
       renderItems();
     } catch (e) {
       document.getElementById('items-list').innerHTML =
-        `<div class="loading"><i class="fas fa-triangle-exclamation"></i>Failed to load<br><small style="font-weight:500">${e.message}</small></div>`;
+        `<div class="loading"><i class="fas fa-triangle-exclamation"></i>Failed to load<br><small style="font-weight:500">${e.message}</small><br><button onclick="loadItems()" style="margin-top:12px;padding:10px 20px;background:#16a34a;color:white;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;">Try Again</button></div>`;
     }
     icon.classList.remove('fa-spin');
+    syncing = false;
   }
 
   function renderItems() {
@@ -520,6 +512,8 @@
   }
 
   async function silentSync() {
+    if (syncing || !items.length) return;
+    syncing = true;
     try {
       const data = await api('getBootstrap');
       const fresh = data.inventory || [];
@@ -545,7 +539,8 @@
         }
       });
       updateStats();
-    } catch (_) { /* silent — don't toast on background errors */ }
+    } catch (_) { /* silent */ }
+    syncing = false;
   }
 
   loadItems();
