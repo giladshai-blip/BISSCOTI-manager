@@ -277,18 +277,18 @@
   const WHATSAPP_NUMBER = '972526664040';
 
   const VEGE_MAP = {
-    'ארגז עגבניות': { en: 'Tomato Box',      emoji: '🍅', bg: '#fef2f2' },
-    'חצילים':       { en: 'Eggplant',         emoji: '🍆', bg: '#faf5ff' },
-    'זוקיני':        { en: 'Zucchini',         emoji: '🥒', bg: '#f0fdf4' },
-    'שרי':           { en: 'Cherry Tomatoes',  emoji: '🍅', bg: '#fef2f2' },
-    'בצל ירוק':     { en: 'Green Onion',       emoji: '🌱', bg: '#f0fdf4' },
-    'בצל סגול':     { en: 'Purple Onion',      emoji: '🧅', bg: '#fdf4ff' },
-    'מנגולד':        { en: 'Chard',             emoji: '🥬', bg: '#f0fdf4' },
-    'בזיליקום':      { en: 'Basil',             emoji: '🌿', bg: '#f0fdf4' },
-    'תרד':           { en: 'Spinach',           emoji: '🥬', bg: '#f0fdf4' },
-    'פלפל אדום':    { en: 'Red Pepper',        emoji: '🌶️', bg: '#fef2f2' },
-    'פלפל צהוב':    { en: 'Yellow Pepper',     emoji: '🫑', bg: '#fefce8' },
-    'פטרוזיליה':     { en: 'Parsley',           emoji: '🌿', bg: '#f0fdf4' },
+    'ארגז עגבניות': { en: 'Tomato Box',      emoji: '🍅', bg: '#fef2f2', unit: 'Cartons', unitHe: 'ארגזים' },
+    'חצילים':       { en: 'Eggplant',         emoji: '🍆', bg: '#faf5ff', unit: 'Cartons', unitHe: 'ארגזים' },
+    'זוקיני':        { en: 'Zucchini',         emoji: '🥒', bg: '#f0fdf4', unit: 'Cartons', unitHe: 'ארגזים' },
+    'שרי':           { en: 'Cherry Tomatoes',  emoji: '🍅', bg: '#fef2f2', unit: 'Cartons', unitHe: 'ארגזים' },
+    'בצל ירוק':     { en: 'Green Onion',       emoji: '🌱', bg: '#f0fdf4', unit: 'Cartons', unitHe: 'ארגזים' },
+    'בצל סגול':     { en: 'Purple Onion',      emoji: '🧅', bg: '#fdf4ff', unit: 'Cartons', unitHe: 'ארגזים' },
+    'מנגולד':        { en: 'Chard',             emoji: '🥬', bg: '#f0fdf4', unit: 'kg',      unitHe: 'ק"ג'    },
+    'בזיליקום':      { en: 'Basil',             emoji: '🌿', bg: '#f0fdf4', unit: 'kg',      unitHe: 'ק"ג'    },
+    'תרד':           { en: 'Spinach',           emoji: '🥬', bg: '#f0fdf4', unit: 'Cartons', unitHe: 'ארגזים' },
+    'פלפל אדום':    { en: 'Red Pepper',        emoji: '🌶️', bg: '#fef2f2', unit: 'Cartons', unitHe: 'ארגזים' },
+    'פלפל צהוב':    { en: 'Yellow Pepper',     emoji: '🫑', bg: '#fefce8', unit: 'Cartons', unitHe: 'ארגזים' },
+    'פטרוזיליה':     { en: 'Parsley',           emoji: '🌿', bg: '#f0fdf4', unit: 'Cartons', unitHe: 'ארגזים' },
   };
 
   function getVegeInfo(id) {
@@ -374,7 +374,7 @@
           </div>
           <div class="item-qty">
             <div class="item-qty-num" id="qty-${item.id}">${item.qty}</div>
-            <div class="item-qty-unit">Cartons<br>קרטונים</div>
+            <div class="item-qty-unit">${info.unit}<br>${info.unitHe}</div>
           </div>
         </div>
         <div class="item-bar">
@@ -487,7 +487,8 @@
       const status = getStatus(Number(item.qty), Number(item.min));
       const icon   = status === 'critical' ? '🔴' : status === 'low' ? '🟡' : '🟢';
       const info   = getVegeInfo(item.id);
-      lines.push(`${icon} ${item.id}: *${item.qty}* ארגזים`);
+      const info = getVegeInfo(item.id);
+      lines.push(`${icon} ${item.id}: *${item.qty}* ${info.unitHe}`);
     });
 
     const counted  = items.filter(i => i.counted).length;
