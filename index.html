@@ -113,17 +113,17 @@
     .app-view { display: none; }
     .app-view.active { display: block; }
 
-    /* ── Maintenance iframe view ─────────────────────────────── */
-    #view-maintenance.active {
+    /* ── Full-screen iframe views ────────────────────────────── */
+    #view-maintenance.active, #view-recipes.active {
       position: fixed;
       top: calc(var(--header-h) + var(--safe-top));
       left: 0; right: 0; bottom: 0;
       z-index: 20; background: white; display: flex; flex-direction: column;
     }
     @media (min-width: 768px) {
-      #view-maintenance.active { right: var(--sidebar-w); }
+      #view-maintenance.active, #view-recipes.active { right: var(--sidebar-w); }
     }
-    #maintenance-frame { width: 100%; flex: 1; border: none; display: block; }
+    #maintenance-frame, #recipes-frame { width: 100%; flex: 1; border: none; display: block; }
 
     /* ── Cards & shared UI ───────────────────────────────────── */
     .card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; }
@@ -234,6 +234,9 @@
       <div class="si-icon"><i class="fa-solid fa-basket-shopping"></i></div><span>הזמנות</span>
     </button>
     <div class="sidebar-section">כלים</div>
+    <button class="sidebar-item" data-nav="recipes" onclick="switchView('recipes')">
+      <div class="si-icon"><i class="fa-solid fa-book-open"></i></div><span>מתכונים</span>
+    </button>
     <button class="sidebar-item" data-nav="maintenance" onclick="switchView('maintenance')">
       <div class="si-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div><span>אחזקה</span>
     </button>
@@ -331,6 +334,11 @@
         <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-3"><i class="fa-solid fa-list-check"></i></div>
         <div class="font-black text-gray-800 text-sm">משימות</div>
         <div class="text-xs text-gray-400 mt-0.5">משימות לדוד</div>
+      </button>
+      <button onclick="switchView('recipes')" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5">
+        <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 mb-3"><i class="fa-solid fa-book-open"></i></div>
+        <div class="font-black text-gray-800 text-sm">מתכונים</div>
+        <div class="text-xs text-gray-400 mt-0.5">ניהול מתכוני ייצור</div>
       </button>
       <a href="html/עובד-מלאי.html" target="_blank" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5" style="text-decoration:none;color:inherit;border:1px solid #e2e8f0;">
         <div class="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 mb-3"><i class="fa-solid fa-person-circle-check"></i></div>
@@ -509,6 +517,11 @@
     </div>
   </div>
 
+  <!-- ═══ RECIPES (iframe) ════════════════════════════════════════ -->
+  <div id="view-recipes" class="app-view">
+    <!-- iframe injected on first visit -->
+  </div>
+
   <!-- ═══ MAINTENANCE (iframe) ═══════════════════════════════════ -->
   <div id="view-maintenance" class="app-view">
     <!-- iframe injected on first visit -->
@@ -622,6 +635,7 @@ let invView = 'list';
 let ordView = 'list';
 let editMinMode = false;
 let maintenanceLoaded = false;
+let recipesLoaded     = false;
 
 // ── API ──────────────────────────────────────────────────────────
 
@@ -682,6 +696,15 @@ function switchView(id) {
   // Activate sub-panel
   if (parentView === 'employees') showEmpTab(subPanel || 'list', true);
   if (parentView === 'inventory') showInvTab(subPanel, true);
+
+  // Load recipes iframe on first visit
+  if (parentView === 'recipes' && !recipesLoaded) {
+    recipesLoaded = true;
+    const frame = document.createElement('iframe');
+    frame.id = 'recipes-frame';
+    frame.src = 'html/מתכונים.html';
+    document.getElementById('view-recipes').appendChild(frame);
+  }
 
   // Load maintenance iframe on first visit
   if (parentView === 'maintenance' && !maintenanceLoaded) {
