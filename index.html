@@ -1111,14 +1111,18 @@ function renderInventory() {
         </div>`;
     } else {
       c.className = `list-row${low ? ' low-row' : ''}`;
+      const minCell = editMinMode
+        ? `<input type="number" value="${i.min}" oninput="updateInv('${i.id}',undefined,this.value)"
+            class="w-14 p-1 border-2 border-green-400 rounded-lg text-center text-sm font-black text-green-700 bg-white">`
+        : `<span class="font-black">${i.min}</span>`;
       c.innerHTML = `
         <div class="list-row-name">${i.id}
           <span class="text-[10px] px-1.5 py-0.5 rounded font-black mr-1 ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span>
         </div>
         <div class="list-row-stats"><span class="text-gray-400 text-[10px] block">מלאי</span><span class="${low ? 'text-orange-600' : ''} font-black">${i.qty}</span></div>
-        <div class="list-row-stats"><span class="text-gray-400 text-[10px] block">מינימום</span><span class="font-black">${i.min}</span></div>
-        <input type="number" value="${i.qty}" oninput="updateInv('${i.id}',this.value,undefined)"
-          class="w-16 p-1 border rounded-lg font-black text-green-700 bg-white text-center text-sm">`;
+        <div class="list-row-stats"><span class="text-gray-400 text-[10px] block">מינימום</span>${minCell}</div>
+        ${editMinMode ? '' : `<input type="number" value="${i.qty}" oninput="updateInv('${i.id}',this.value,undefined)"
+          class="w-16 p-1 border rounded-lg font-black text-green-700 bg-white text-center text-sm">`}`;
     }
     g.appendChild(c);
   });
