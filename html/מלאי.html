@@ -139,11 +139,18 @@
             const invMap = new Map();
             (data.inventory || []).forEach(i => invMap.set(i.id.trim(), i));
             inventory = [...invMap.values()];
+            const EXTRA_ORDER_ITEMS = ['פטריות']; // items for ordering only, not in inventory
             if (orders.length === 0) {
                 orders = inventory.map(i => ({ id: i.id, amountToOrder: '' }));
+                EXTRA_ORDER_ITEMS.forEach(id => {
+                    if (!orders.find(o => o.id === id)) orders.push({ id, amountToOrder: '', orderOnly: true });
+                });
             } else {
                 inventory.forEach(item => {
                     if (!orders.find(o => o.id === item.id)) orders.push({ id: item.id, amountToOrder: '' });
+                });
+                EXTRA_ORDER_ITEMS.forEach(id => {
+                    if (!orders.find(o => o.id === id)) orders.push({ id, amountToOrder: '', orderOnly: true });
                 });
             }
             renderAll();
@@ -409,20 +416,31 @@
         g.className = ordView === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3' : '';
 
         orders.forEach(o => {
-            const inv     = inventory.find(i => i.id === o.id) || { qty: 0, min: 0 };
-            const cur     = Number(inv.qty)  || 0;
-            const min     = Number(inv.min)  || 0;
+            const inv     = o.orderOnly ? null : (inventory.find(i => i.id === o.id) || { qty: 0, min: 0 });
+            const cur     = inv ? (Number(inv.qty) || 0) : null;
+            const min     = inv ? (Number(inv.min) || 0) : null;
             const ord     = Number(o.amountToOrder) || 0;
-            const after   = cur + ord;
-            const low     = cur < min;
-            const okAfter = after >= min;
+            const after   = cur !== null ? cur + ord : null;
+            const low     = cur !== null && min !== null && cur < min;
+            const okAfter = after !== null && min !== null && after >= min;
+            const safeId  = o.id.replace(/['"]/g, '');
             const counter = `
                 <div class="order-counter">
-                    <button class="order-counter-btn order-btn-minus" onclick="adjustOrder('${o.id}',-1)">−</button>
-                    <input class="order-counter-input" type="number" value="${o.amountToOrder || 0}"
-                        oninput="updateOrderAmount('${o.id}',this.value)" min="0">
-                    <button class="order-counter-btn order-btn-plus"  onclick="adjustOrder('${o.id}', 1)">+</button>
+                    <button class="order-counter-btn order-btn-minus" onclick="adjustOrder('${safeId}',-1)">−</button>
+                    <input class="order-counter-input" id="order-input-${safeId}" type="number"
+                        value="${o.amountToOrder || 0}" oninput="updateOrderAmount('${safeId}',this.value)" min="0">
+                    <button class="order-counter-btn order-btn-plus"  onclick="adjustOrder('${safeId}', 1)">+</button>
                 </div>`;
+
+            const statsHtml = o.orderOnly ? '' : `
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+                        <span>מלאי כעת:</span>
+                        <span class="font-black ${low ? 'text-orange-600' : 'text-gray-700'}">${cur}</span>
+                    </div>
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-3">
+                        <span>אחרי הזמנה:</span>
+                        <span id="after-${o.id}" class="font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}">${after}</span>
+                    </div>`;
 
             const c = document.createElement('div');
             if (ordView === 'grid') {
@@ -432,19 +450,13 @@
                         <h4 class="font-black text-gray-800 text-sm">${o.id}</h4>
                         ${low ? '<span class="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black">חסר</span>' : ''}
                     </div>
-                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
-                        <span>מלאי כעת:</span>
-                        <span class="font-black ${low ? 'text-orange-600' : 'text-gray-700'}">${cur}</span>
-                    </div>
-                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-3">
-                        <span>אחרי הזמנה:</span>
-                        <span id="after-${o.id}" class="font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}">${after}</span>
-                    </div>
+                    ${statsHtml}
                     ${counter}`;
             } else {
                 c.className = `list-row${low ? ' low-row' : ''}`;
                 c.innerHTML = `
                     <div class="list-row-name">${o.id}</div>
+                    ${o.orderOnly ? '' : `
                     <div class="list-row-stats">
                         <span class="text-gray-400 text-[10px]">כעת</span>
                         <span class="${low ? 'text-orange-600' : 'text-gray-800'} font-black">${cur}</span>
@@ -452,7 +464,7 @@
                     <div class="list-row-stats">
                         <span class="text-gray-400 text-[10px]">אחרי</span>
                         <span id="after-${o.id}" class="font-black ${okAfter ? 'after-val' : 'after-low'}">${after}</span>
-                    </div>
+                    </div>`}
                     ${counter}`;
             }
             g.appendChild(c);
@@ -464,7 +476,7 @@
         if (!o) return;
         const newVal = Math.max(0, (Number(o.amountToOrder) || 0) + delta);
         o.amountToOrder = newVal;
-        const input = document.querySelector(`.order-counter-input[oninput*="'${id}'"]`);
+        const input = document.getElementById('order-input-' + id);
         if (input) input.value = newVal;
         updateOrderAmount(id, newVal);
     }
