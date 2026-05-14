@@ -1,78 +1,237 @@
 /**
- * קוד סנכרון חכם - Biscotti Manager
- * מותאם לכותרות בעברית מהגיליון
+ * Biscotti Manager - Server Side API (code.gs)
+ * סנכרון מלא עמודות A-H | ניהול מלאי והזמנות
  */
 
-const CONFIG = {
-  'שעות תקן': {
-    'תאריך': 'date',
-    'מכירות': 'sales',
-    'שעות': 'hours'
-  },
-  'ניהול עובדים': {
-    'מספר עובד': 'id',
-    'שם': 'name',
-    'תפקיד': 'position',
-    'חברה': 'company',
-    'טלפון': 'phone',
-    'תאריך התחלה': 'startDate',
-    'הערות': 'notes'
-  },
-  'מלאי': {
-    'מזהה': 'id',
-    'כמות': 'qty',
-    'מינימום': 'min'
-  },
-  'משימות לדוד': {
-    'ID': 'id',
-    'משימה': 'name',
-    'בוצע': 'checked'
-  }
-};
-
 function doGet(e) {
-  const action = e.parameter.action;
-  try {
-    if (action === 'getBootstrap') {
-      return jsonResponse({
-        status: 'success',
-        standardHours: getMappedData('שעות תקן'),
-        employees: getMappedData('ניהול עובדים'),
-        inventory: getMappedData('מלאי'),
-        tasks: getMappedData('משימות לדוד')
+  if (e && e.parameter && e.parameter.action) {
+    const action = e.parameter.action;
+    let payload = null;
+    try {
+      if (e.parameter.payload) {
+        payload = JSON.parse(decodeURIComponent(e.parameter.payload));
+      }
+
+      let result;
+      switch(action) {
+        case 'getBootstrap':       result = getBootstrap();              break;
+        case 'saveEmployeeData':   result = saveEmployeeData(payload);   break;
+        case 'updateInventory':    result = updateInventory(payload);    break;
+        case 'updateTask':         result = updateTask(payload);         break;
+        case 'resetAllTasks':      result = resetAllTasks();             break;
+        case 'saveNoteToEmployee': result = saveNoteToEmployee(payload); break;
+        case 'deleteNoteFromEmployee': result = deleteNoteFromEmployee(payload); break;
+        default: result = { status: 'error', message: 'Action not found: ' + action };
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: result }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  return HtmlService.createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('ביסקוטי - ניהול חכם')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function doPost(e) { return doGet(e); }
+
+// ─── Bootstrap ────────────────────────────────────────────────────────────────
+
+function getBootstrap() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  return {
+    employees:     getSheetData(ss, 'ניהול עובדים'),
+    standardHours: getSheetData(ss, 'שעות תקן'),
+    inventory:     getSheetData(ss, 'מלאי'),
+    tasks:         getSheetData(ss, 'משימות לדוד')
+  };
+}
+
+// קריאה גנרית — מחזירה מערך אובייקטים מותאם לכל גיליון
+function getSheetData(ss, name) {
+  const sheet = ss.getSheetByName(name);
+  if (!sheet) return [];
+  const data        = sheet.getDataRange().getValues();
+  const displayData = sheet.getDataRange().getDisplayValues(); // שומר פורמט שעות/טלפונים
+  if (data.length <= 1) return [];
+
+  const tz = ss.getSpreadsheetTimeZone();
+  let result = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const r    = data[i];
+    const dRow = displayData[i];
+    if (r[0] === "" && r[1] === "") continue;
+
+    if (name === 'שעות תקן') {
+      result.push({ date: formatDate(r[0], ss), sales: r[1] || 0, hours: r[2] || 0 });
+
+    } else if (name === 'מלאי') {
+      result.push({ id: r[0], qty: r[1] || 0, timestamp: r[2], min: r[3] || 0 });
+
+    } else if (name === 'משימות לדוד') {
+      result.push({ id: i, name: r[0], done: r[1] || 0, checked: Number(r[1]) > 0 });
+
+    } else if (name === 'ניהול עובדים') {
+      let notes = [];
+      try { notes = r[5] ? JSON.parse(r[5]) : []; } catch(e) {}
+
+      // שעת התחלה (עמודה G) — נרמול HH:MM
+      let st = dRow[6] ? String(dRow[6]).trim().replace(/^'/, "") : "";
+      if (st && st.includes(':')) {
+        const parts = st.split(':');
+        st = parts[0].padStart(2, '0') + ':' + parts[1].substring(0, 2).padStart(2, '0');
+      }
+
+      // תאריך התחלה (עמודה H)
+      let sDate = "";
+      if (r[7] instanceof Date) {
+        sDate = Utilities.formatDate(r[7], tz, "yyyy-MM-dd");
+      } else if (r[7]) {
+        sDate = String(r[7]).trim().replace(/^'/, "");
+      }
+
+      result.push({
+        position:  dRow[0],
+        name:      dRow[1],
+        id:        dRow[2],
+        company:   dRow[3],
+        phone:     dRow[4].replace(/^'/, ""),
+        notes:     notes,
+        startTime: st,
+        startDate: sDate
       });
     }
-    // ללא action – מציג דף סטטוס ה-API
-    if (!action) return HtmlService.createHtmlOutputFromFile('index');
-    return jsonResponse({ status: 'error', message: 'Unknown action: ' + action });
-  } catch (err) {
-    return jsonResponse({ status: 'error', message: err.toString() });
   }
+  return result;
 }
 
-function getMappedData(sheetName) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-  if (!sheet) return [];
-  const data = sheet.getDataRange().getValues();
-  const headers = data.shift();
-  const mapping = CONFIG[sheetName] || {};
+// ─── Employees ────────────────────────────────────────────────────────────────
 
-  return data.map(row => {
-    let obj = {};
-    headers.forEach((h, i) => {
-      const key = mapping[h] || h;
-      let val = row[i];
-      // טיפול מיוחד בהערות (JSON)
-      if (key === 'notes' && val) {
-        try { val = JSON.parse(val); } catch(e) { val = []; }
-      }
-      obj[key] = val;
-    });
-    return obj;
-  });
+function saveEmployeeData(emp) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = getOrCreateSheet(ss, 'ניהול עובדים');
+  const data  = sheet.getDataRange().getValues();
+
+  let foundRow = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][2] && data[i][2].toString() === emp.id.toString()) { foundRow = i + 1; break; }
+  }
+
+  const notesStr = emp.notes
+    ? (typeof emp.notes === 'string' ? emp.notes : JSON.stringify(emp.notes))
+    : "[]";
+
+  // מגן פורמטים עם ' כדי למנוע המרת טלפון/שעה לפורמט מספרי
+  const newRow = [
+    emp.position  || "",
+    emp.name      || "",
+    emp.id        || "",
+    emp.company   || "",
+    emp.phone     ? "'" + emp.phone     : "",
+    notesStr,
+    emp.startTime ? "'" + emp.startTime : "",
+    emp.startDate ? "'" + emp.startDate : ""
+  ];
+
+  if (foundRow > -1) { sheet.getRange(foundRow, 1, 1, 8).setValues([newRow]); }
+  else               { sheet.appendRow(newRow); }
+  return { status: 'success' };
 }
 
-function jsonResponse(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+function saveNoteToEmployee(data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ניהול עובדים');
+  const rows  = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][2] && rows[i][2].toString() === data.employeeId.toString()) {
+      let notes = rows[i][5] ? JSON.parse(rows[i][5]) : [];
+      notes.unshift({ text: data.note, date: new Date().toLocaleString('he-IL') });
+      sheet.getRange(i + 1, 6).setValue(JSON.stringify(notes));
+      return { status: 'success' };
+    }
+  }
+  return { status: 'not_found' };
+}
+
+function deleteNoteFromEmployee(payload) {
+  const { empId, noteIndex } = payload;
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ניהול עובדים');
+  const rows  = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][2] && rows[i][2].toString() === empId.toString()) {
+      let notes = rows[i][5] ? JSON.parse(rows[i][5]) : [];
+      notes.splice(noteIndex, 1);
+      sheet.getRange(i + 1, 6).setValue(JSON.stringify(notes));
+      return { status: 'success' };
+    }
+  }
+  return { status: 'not_found' };
+}
+
+// ─── Inventory ────────────────────────────────────────────────────────────────
+
+function updateInventory(payload) {
+  const { id, qty, min } = payload;
+  const sheet    = getOrCreateSheet(SpreadsheetApp.getActiveSpreadsheet(), 'מלאי');
+  const data     = sheet.getDataRange().getValues();
+  const ts       = new Date().toLocaleString('he-IL');
+  let foundRow   = -1;
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] && data[i][0].toString() === id.toString()) { foundRow = i + 1; break; }
+  }
+
+  if (foundRow > -1) {
+    if (qty !== undefined && qty !== null) sheet.getRange(foundRow, 2).setValue(qty);
+    if (min !== undefined && min !== null) sheet.getRange(foundRow, 4).setValue(min);
+    sheet.getRange(foundRow, 3).setValue(ts);
+  } else {
+    sheet.appendRow([id, qty || 0, ts, min || 0]);
+  }
+  return { status: 'success' };
+}
+
+// ─── Tasks ────────────────────────────────────────────────────────────────────
+
+function updateTask(task) {
+  const sheet  = getOrCreateSheet(SpreadsheetApp.getActiveSpreadsheet(), 'משימות לדוד');
+  const data   = sheet.getDataRange().getValues();
+  let foundRow = -1;
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === task.name) { foundRow = i + 1; break; }
+  }
+
+  if (foundRow > -1) { sheet.getRange(foundRow, 2).setValue(task.done); }
+  else               { sheet.appendRow([task.name, task.done]); }
+  return { status: 'success' };
+}
+
+function resetAllTasks() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('משימות לדוד');
+  if (!sheet) return { status: 'error' };
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 2, lastRow - 1, 1).setValues(Array(lastRow - 1).fill([0]));
+  }
+  return { status: 'success' };
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getOrCreateSheet(ss, name) {
+  return ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+function formatDate(date, ss) {
+  if (!date) return "";
+  if (Object.prototype.toString.call(date) === '[object Date]') {
+    return Utilities.formatDate(date, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd");
+  }
+  return String(date);
 }
