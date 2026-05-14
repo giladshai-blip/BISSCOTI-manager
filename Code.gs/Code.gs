@@ -74,7 +74,7 @@ function getSheetData(ss, name) {
       result.push({ date: formatDate(r[0], ss), sales: r[1] || 0, hours: r[2] || 0 });
 
     } else if (name === 'מלאי') {
-      result.push({ id: r[0], qty: r[1] || 0, timestamp: r[2], min: r[3] || 0 });
+      result.push({ id: r[0].toString().trim(), qty: r[1] || 0, timestamp: r[2], min: r[3] || 0 });
 
     } else if (name === 'משימות לדוד') {
       result.push({ id: i, name: r[0], done: r[1] || 0, checked: Number(r[1]) > 0 });
@@ -110,6 +110,13 @@ function getSheetData(ss, name) {
       });
     }
   }
+  // deduplicate inventory by id — keep last row per item
+  if (name === 'מלאי') {
+    const seen = new Map();
+    result.forEach(r => seen.set(r.id, r));
+    return [...seen.values()];
+  }
+
   return result;
 }
 

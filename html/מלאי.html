@@ -95,7 +95,9 @@
         if (syncEl) syncEl.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
         try {
             const data = await api('getBootstrap');
-            inventory = data.inventory || [];
+            const invMap = new Map();
+            (data.inventory || []).forEach(i => invMap.set(i.id.trim(), i));
+            inventory = [...invMap.values()];
             if (orders.length === 0) {
                 orders = inventory.map(i => ({ id: i.id, amountToOrder: '' }));
             } else {
