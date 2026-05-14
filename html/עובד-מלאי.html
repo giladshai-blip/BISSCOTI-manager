@@ -336,6 +336,7 @@
       };
       xhr.onerror   = () => reject(new Error('Network error'));
       xhr.ontimeout = () => reject(new Error('Timeout after 30s'));
+      xhr.onabort   = () => reject(new Error('Request aborted'));
       xhr.send();
     });
   }
@@ -348,7 +349,7 @@
     if (syncing) return;
     syncing = true;
     const icon = document.getElementById('sync-icon');
-    icon.classList.add('fa-spin');
+    if (icon) icon.classList.add('fa-spin');
     openCard = null;
     try {
       const data = await api('getBootstrap');
@@ -360,7 +361,7 @@
       document.getElementById('items-list').innerHTML =
         `<div class="loading"><i class="fas fa-triangle-exclamation"></i>Failed to load<br><small style="font-weight:500">${e.message}</small><br><button onclick="loadItems()" style="margin-top:12px;padding:10px 20px;background:#16a34a;color:white;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;">Try Again</button></div>`;
     }
-    icon.classList.remove('fa-spin');
+    if (icon) icon.classList.remove('fa-spin');
     syncing = false;
   }
 
@@ -509,7 +510,6 @@
       const status = getStatus(Number(item.qty), Number(item.min));
       const icon   = status === 'critical' ? '🔴' : status === 'low' ? '🟡' : '🟢';
       const info   = getVegeInfo(item.id);
-      const info = getVegeInfo(item.id);
       lines.push(`${icon} ${item.id}: *${item.qty}* ${info.unitHe}`);
     });
 
