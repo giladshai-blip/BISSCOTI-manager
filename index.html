@@ -448,8 +448,8 @@
       </header>
       <div id="sync-worker-status" class="hidden mb-4 p-3 rounded-xl text-sm font-bold text-center"></div>
       <div class="flex justify-end mb-3 gap-1">
-        <button onclick="setInvView('grid')" id="inv-btn-grid" class="vt-btn on"><i class="fa-solid fa-grip"></i></button>
-        <button onclick="setInvView('list')" id="inv-btn-list" class="vt-btn"><i class="fa-solid fa-list"></i></button>
+        <button onclick="setInvView('grid')" id="inv-btn-grid" class="vt-btn"><i class="fa-solid fa-grip"></i></button>
+        <button onclick="setInvView('list')" id="inv-btn-list" class="vt-btn on"><i class="fa-solid fa-list"></i></button>
       </div>
       <div id="inventory-grid"></div>
     </div>
@@ -462,8 +462,8 @@
         </button>
         <h2 class="text-xl font-black text-gray-800">הזמנות</h2>
         <div class="flex gap-1">
-          <button onclick="setOrdView('grid')" id="ord-btn-grid" class="vt-btn on"><i class="fa-solid fa-grip"></i></button>
-          <button onclick="setOrdView('list')" id="ord-btn-list" class="vt-btn"><i class="fa-solid fa-list"></i></button>
+          <button onclick="setOrdView('grid')" id="ord-btn-grid" class="vt-btn"><i class="fa-solid fa-grip"></i></button>
+          <button onclick="setOrdView('list')" id="ord-btn-list" class="vt-btn on"><i class="fa-solid fa-list"></i></button>
         </div>
       </header>
       <button onclick="sendOrderToEliyahu()"
@@ -561,8 +561,8 @@ let state = { employees: [], hours: [], inventory: [], tasks: [] };
 let orders = [];
 let selectedEmp = null;
 let empLayout = 'list';
-let invView = 'grid';
-let ordView = 'grid';
+let invView = 'list';
+let ordView = 'list';
 let editMinMode = false;
 let maintenanceLoaded = false;
 

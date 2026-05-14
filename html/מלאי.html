@@ -246,10 +246,10 @@
         <div id="sync-worker-status" class="hidden mb-4 p-3 rounded-xl text-sm font-bold text-center"></div>
         <!-- View toggle for inventory -->
         <div class="flex justify-end mb-3 gap-1">
-            <button onclick="setView('inv','grid')" id="inv-btn-grid" class="view-toggle-btn active-toggle" title="אריח">
+            <button onclick="setView('inv','grid')" id="inv-btn-grid" class="view-toggle-btn" title="אריח">
                 <i class="fa-solid fa-grip"></i>
             </button>
-            <button onclick="setView('inv','list')" id="inv-btn-list" class="view-toggle-btn" title="רשימה">
+            <button onclick="setView('inv','list')" id="inv-btn-list" class="view-toggle-btn active-toggle" title="רשימה">
                 <i class="fa-solid fa-list"></i>
             </button>
         </div>
@@ -263,10 +263,10 @@
                 <i class="fa-solid fa-trash ml-1"></i> נקה
             </button>
             <div class="flex gap-1">
-                <button onclick="setView('ord','grid')" id="ord-btn-grid" class="view-toggle-btn active-toggle" title="אריח">
+                <button onclick="setView('ord','grid')" id="ord-btn-grid" class="view-toggle-btn" title="אריח">
                     <i class="fa-solid fa-grip"></i>
                 </button>
-                <button onclick="setView('ord','list')" id="ord-btn-list" class="view-toggle-btn" title="רשימה">
+                <button onclick="setView('ord','list')" id="ord-btn-list" class="view-toggle-btn active-toggle" title="רשימה">
                     <i class="fa-solid fa-list"></i>
                 </button>
             </div>
@@ -281,8 +281,8 @@
 
 <script>
     let editMinMode = false;
-    let invView = 'grid';
-    let ordView = 'grid';
+    let invView = 'list';
+    let ordView = 'list';
 
     function setView(section, mode) {
         if (section === 'inv') {
