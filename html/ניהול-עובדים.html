@@ -228,9 +228,9 @@
         <div id="view-tasks" class="view hidden">
             <header class="flex justify-between items-center mb-6">
                 <button onclick="resetTasks()" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100">נקה משימות</button>
-                <div class="flex flex-col items-center gap-1">
+                <div class="flex flex-col items-center gap-2">
+                    <input type="date" id="tasks-date" class="text-sm font-bold text-gray-700 border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-green-400">
                     <button onclick="sendTasks()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg"><i class="fa-brands fa-whatsapp mr-1"></i> שלח לדוד</button>
-                    <span id="tasks-date" class="text-xs font-bold text-gray-400"></span>
                 </div>
             </header>
             <div id="tasks-grid" class="grid grid-cols-1 gap-3"></div>
@@ -357,13 +357,13 @@
 
         function sendTasks() {
             const now     = new Date();
-            const dateStr = now.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
             const timeStr = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+            const dateInput = document.getElementById('tasks-date');
+            const pickedDate = dateInput && dateInput.value ? new Date(dateInput.value) : now;
+            const dateStr = pickedDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
             let text = `*משימות יומיות*\nתאריך: ${dateStr} | ${timeStr}\n\n`;
             state.tasks.forEach(t => text += `${t.name}: ${t.done > 0 ? t.done : '0'}\n\n`);
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-            const el = document.getElementById('tasks-date');
-            if (el) el.textContent = `נשלח ב-${timeStr}`;
         }
 
         function calculateSeniority(d) {
@@ -522,8 +522,8 @@
             const g = document.getElementById('tasks-grid'); if(!g) return;
             g.innerHTML = '';
             const dateEl = document.getElementById('tasks-date');
-            if (dateEl && !dateEl.textContent) {
-                dateEl.textContent = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+            if (dateEl && !dateEl.value) {
+                dateEl.value = new Date().toISOString().slice(0, 10);
             }
             state.tasks.forEach(t => {
                 const c = document.createElement('div'); c.className = `card flex items-center gap-4 shadow-sm border-gray-100 ${t.checked ? 'opacity-40 grayscale bg-gray-50' : ''}`;
