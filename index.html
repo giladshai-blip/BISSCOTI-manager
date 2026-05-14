@@ -760,9 +760,13 @@ function setSyncStatus(html) {
   });
 }
 
+let syncFailCount = 0;
+
 async function loadData() {
+  setSyncStatus('<i class="fa-solid fa-rotate fa-spin" style="color:#94a3b8"></i>');
   try {
     const data = await api('getBootstrap');
+    syncFailCount = 0;
     state.employees = data.employees    || [];
     state.hours     = data.standardHours || [];
     state.tasks         = data.tasks         || [];
@@ -785,8 +789,13 @@ async function loadData() {
     const now = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
     setSyncStatus(`<i class="fa-solid fa-check-circle" style="color:#16a34a"></i> ${now}`);
   } catch(e) {
-    showToast('שגיאת סנכרון', '#dc2626');
-    setSyncStatus('<i class="fa-solid fa-xmark" style="color:#dc2626"></i> שגיאה');
+    syncFailCount++;
+    const retryBtn = `<button onclick="loadData()" style="margin-right:4px;color:#3b82f6;font-weight:700;background:none;border:none;cursor:pointer;font-size:10px;">↻ נסה שוב</button>`;
+    setSyncStatus(`<i class="fa-solid fa-xmark" style="color:#dc2626"></i> שגיאה ${retryBtn}`);
+    if (syncFailCount >= 3) {
+      showToast('בעיית תקשורת עם השרת', '#dc2626');
+      syncFailCount = 0;
+    }
   }
 }
 
@@ -1333,7 +1342,7 @@ window.onload = () => {
   }
 
   loadData();
-  setInterval(loadData, 10000);
+  setInterval(loadData, 90000);
 };
 </script>
 </body>
