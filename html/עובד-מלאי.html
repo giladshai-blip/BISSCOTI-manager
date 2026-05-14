@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="theme-color" content="#16a34a">
-  <meta name="apple-mobile-web-app-title" content="ספירת מלאי">
-  <title>ספירת מלאי</title>
+  <meta name="theme-color" content="#ffffff">
+  <title>Vegetable Inventory</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -18,200 +17,283 @@
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --green: #16a34a;
-      --green-light: #f0fdf4;
-      --green-border: #bbf7d0;
+      --orange: #ea580c;
+      --red: #dc2626;
+      --gray: #64748b;
     }
 
-    html, body { height: 100%; }
-    body {
-      font-family: 'Heebo', sans-serif;
-      background: #f4f7fb;
-      color: #0f172a;
-      direction: rtl;
-      -webkit-font-smoothing: antialiased;
-    }
+    html, body { height: 100%; background: #f1f5f9; font-family: 'Inter', sans-serif; color: #0f172a; -webkit-font-smoothing: antialiased; }
 
     /* ── Header ── */
     .header {
-      position: fixed; top: 0; right: 0; left: 0; z-index: 50;
-      background: var(--green);
+      position: sticky; top: 0; z-index: 50;
+      background: white;
       padding: calc(14px + var(--safe-top)) 20px 14px;
+      border-bottom: 1px solid #e2e8f0;
       display: flex; align-items: center; justify-content: space-between;
-      box-shadow: 0 2px 12px rgba(22,163,74,0.3);
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
     }
 
-    .header-title { display: flex; align-items: center; gap: 10px; }
-    .header-title h1 { font-size: 1.2rem; font-weight: 900; color: white; }
-    .header-title span { font-size: 0.75rem; color: rgba(255,255,255,0.75); font-weight: 600; }
+    .header-left h1 { font-size: 1.1rem; font-weight: 800; }
+    .header-left p  { font-size: 0.72rem; color: var(--gray); margin-top: 2px; }
 
-    .btn-sync {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.3);
-      display: flex; align-items: center; justify-content: center;
-      color: white; cursor: pointer; font-size: 16px;
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    .btn-header {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0;
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      background: white; color: #0f172a;
+      transition: background 0.15s;
     }
+    .btn-header:active { background: #f8fafc; }
+    .btn-header.error  { color: var(--red); border-color: #fecaca; background: #fef2f2; }
+    .btn-header.sync   { color: var(--green); border-color: #bbf7d0; background: #f0fdf4; }
 
-    /* ── Content ── */
-    .content {
-      padding-top: calc(72px + var(--safe-top));
-      padding-bottom: calc(100px + var(--safe-bottom));
-      padding-left: 16px; padding-right: 16px;
+    /* ── Stats ── */
+    .stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; padding: 16px 16px 0;
       max-width: 600px; margin: 0 auto;
     }
 
-    /* ── Status bar ── */
-    .status-bar {
-      margin: 16px 0 12px;
-      display: flex; align-items: center; justify-content: space-between;
+    .stat-card {
+      background: white; border-radius: 14px; border: 1px solid #e2e8f0;
+      padding: 14px 10px; text-align: center;
     }
-    .status-label { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-    .progress-text { font-size: 0.75rem; font-weight: 700; color: var(--green); }
+    .stat-num  { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+    .stat-label { font-size: 0.65rem; font-weight: 700; color: var(--gray); margin-top: 4px; letter-spacing: 0.3px; }
+    .stat-sub   { font-size: 0.6rem; color: #94a3b8; margin-top: 1px; }
+    .stat-card.ok     .stat-num { color: var(--green); }
+    .stat-card.low    .stat-num { color: var(--orange); }
+    .stat-card.critical .stat-num { color: var(--red); }
 
-    .progress-bar {
-      height: 4px; background: #e2e8f0; border-radius: 99px; margin-bottom: 16px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; background: var(--green); border-radius: 99px;
-      transition: width 0.4s ease;
+    /* ── Content ── */
+    .content {
+      padding: 14px 16px calc(100px + var(--safe-bottom));
+      max-width: 600px; margin: 0 auto;
     }
 
     /* ── Item Card ── */
     .item-card {
-      background: white;
-      border: 2px solid #e2e8f0;
-      border-radius: 18px;
-      padding: 18px 16px;
-      margin-bottom: 10px;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      background: white; border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 10px; overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .item-card.counted { border-color: #bbf7d0; }
+    .item-card.low-stock { border-color: #fed7aa; }
+    .item-card.critical-stock { border-color: #fecaca; }
+
+    .item-main { padding: 14px 16px 10px; display: flex; align-items: center; gap: 12px; }
+
+    .item-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
     }
 
-    .item-card.counted {
-      border-color: var(--green-border);
-      background: var(--green-light);
-    }
+    .item-info { flex: 1; min-width: 0; }
+    .item-name { font-size: 0.95rem; font-weight: 700; }
+    .item-status { font-size: 0.72rem; font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+    .item-status.ok       { color: var(--green); }
+    .item-status.low      { color: var(--orange); }
+    .item-status.critical { color: var(--red); }
 
-    .item-name {
-      font-size: 1.05rem; font-weight: 800; margin-bottom: 14px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
+    .item-qty { text-align: right; flex-shrink: 0; }
+    .item-qty-num  { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+    .item-qty-unit { font-size: 0.65rem; color: var(--gray); font-weight: 600; text-align: right; }
 
-    .counted-badge {
-      font-size: 0.65rem; font-weight: 800; color: var(--green);
-      background: white; border: 1.5px solid var(--green-border);
-      padding: 2px 8px; border-radius: 20px;
-      display: none;
-    }
-    .item-card.counted .counted-badge { display: inline-flex; align-items: center; gap: 4px; }
+    /* progress bar */
+    .item-bar { margin: 0 16px 10px; }
+    .bar-track { height: 4px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+    .bar-fill  { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+    .bar-fill.ok       { background: var(--green); }
+    .bar-fill.low      { background: var(--orange); }
+    .bar-fill.critical { background: var(--red); }
 
-    /* ── Counter ── */
-    .counter {
-      display: flex; align-items: center; gap: 12px;
+    /* count button */
+    .btn-count {
+      width: 100%; padding: 11px 16px;
+      background: #f8fafc; border: none; border-top: 1px solid #f1f5f9;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      font-size: 0.82rem; font-weight: 600; color: #475569;
+      cursor: pointer; transition: background 0.15s;
+      font-family: 'Inter', sans-serif;
     }
+    .btn-count:active { background: #f1f5f9; }
+    .btn-count .coin { width: 18px; height: 18px; border-radius: 50%; background: #fbbf24; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: white; }
 
-    .counter-btn {
-      width: 52px; height: 52px; border-radius: 14px; border: none; cursor: pointer;
-      font-size: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center;
-      transition: transform 0.1s, opacity 0.2s;
-      flex-shrink: 0;
+    /* ── Counter Expand ── */
+    .counter-expand {
+      display: none; padding: 12px 16px;
+      background: #f8fafc; border-top: 1px solid #f1f5f9;
     }
-    .counter-btn:active { transform: scale(0.9); }
-    .btn-minus { background: #fee2e2; color: #ef4444; }
-    .btn-plus  { background: #dcfce7; color: #16a34a; }
+    .counter-expand.open { display: block; }
 
-    .counter-input {
-      flex: 1; height: 52px; text-align: center;
-      font-size: 1.6rem; font-weight: 900; color: #0f172a;
-      border: 2px solid #e2e8f0; border-radius: 14px;
-      background: white; font-family: 'Heebo', sans-serif;
+    .counter-row { display: flex; align-items: center; gap: 10px; }
+
+    .cnt-btn {
+      width: 48px; height: 48px; border-radius: 12px; border: none; cursor: pointer;
+      font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform 0.1s;
+    }
+    .cnt-btn:active { transform: scale(0.9); }
+    .cnt-minus { background: #fee2e2; color: var(--red); }
+    .cnt-plus  { background: #dcfce7; color: var(--green); }
+
+    .cnt-input {
+      flex: 1; height: 48px; text-align: center;
+      font-size: 1.4rem; font-weight: 800; color: #0f172a;
+      border: 2px solid #e2e8f0; border-radius: 12px;
+      background: white; font-family: 'Inter', sans-serif;
       -moz-appearance: textfield;
     }
-    .counter-input::-webkit-outer-spin-button,
-    .counter-input::-webkit-inner-spin-button { -webkit-appearance: none; }
-    .counter-input:focus { outline: none; border-color: var(--green); }
-    .item-card.counted .counter-input { border-color: var(--green-border); }
+    .cnt-input::-webkit-outer-spin-button,
+    .cnt-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .cnt-input:focus { outline: none; border-color: var(--green); }
 
-    /* ── Save Button ── */
-    .btn-save-item {
-      width: 100%; margin-top: 12px; padding: 13px;
-      background: var(--green); color: white; border: none;
-      border-radius: 14px; font-size: 0.95rem; font-weight: 800;
-      cursor: pointer; font-family: 'Heebo', sans-serif;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+    .cnt-confirm {
+      width: 48px; height: 48px; border-radius: 12px; border: none; cursor: pointer;
+      background: var(--green); color: white; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform 0.1s, background 0.15s;
+    }
+    .cnt-confirm:active { transform: scale(0.9); background: #15803d; }
+    .cnt-confirm.saving { background: #94a3b8; pointer-events: none; }
+
+    /* ── Bottom bar ── */
+    .bottom-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 12px 16px calc(12px + var(--safe-bottom));
+      background: white; border-top: 1px solid #e2e8f0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    }
+
+    .btn-report {
+      width: 100%; max-width: 600px; margin: 0 auto; display: flex;
+      align-items: center; justify-content: center; gap: 10px;
+      padding: 15px 20px; border-radius: 14px; border: none;
+      background: var(--green); color: white; cursor: pointer;
+      font-size: 0.95rem; font-weight: 800; font-family: 'Inter', sans-serif;
       transition: background 0.15s, transform 0.1s;
     }
-    .btn-save-item:active { transform: scale(0.98); background: #15803d; }
-    .item-card.counted .btn-save-item { background: #15803d; }
+    .btn-report:active { transform: scale(0.98); background: #15803d; }
+    .btn-report-sub { font-size: 0.75rem; font-weight: 500; opacity: 0.8; direction: rtl; }
 
-    /* ── Done Banner ── */
-    .done-banner {
-      display: none;
-      background: var(--green); color: white;
-      border-radius: 18px; padding: 24px 20px;
-      text-align: center; margin-bottom: 16px;
-    }
-    .done-banner.show { display: block; }
-    .done-banner h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 6px; }
-    .done-banner p  { font-size: 0.85rem; opacity: 0.85; }
-
-    /* ── Loading / Empty ── */
-    .loading {
-      text-align: center; padding: 60px 20px;
-      color: #94a3b8; font-weight: 700;
-    }
+    /* ── Loading ── */
+    .loading { text-align: center; padding: 60px 20px; color: #94a3b8; font-weight: 600; }
     .loading i { font-size: 2rem; display: block; margin-bottom: 12px; }
 
     /* ── Toast ── */
     #toast {
       position: fixed; z-index: 9999;
-      bottom: calc(20px + var(--safe-bottom));
+      bottom: calc(90px + var(--safe-bottom));
       left: 50%; transform: translateX(-50%);
-      white-space: nowrap;
+      white-space: nowrap; pointer-events: none;
     }
   </style>
 </head>
 <body>
 
 <header class="header">
-  <div class="header-title">
-    <div>
-      <h1><i class="fas fa-boxes" style="margin-left:8px;"></i>ספירת מלאי</h1>
-      <span id="header-date"></span>
-    </div>
+  <div class="header-left">
+    <h1>Vegetable Inventory</h1>
+    <p>Biscotti · מלאי ירקות</p>
   </div>
-  <button class="btn-sync" onclick="loadItems()" title="רענן">
-    <i id="sync-icon" class="fas fa-rotate"></i>
-  </button>
+  <div class="header-actions">
+    <button class="btn-header sync" onclick="loadItems()" id="sync-btn">
+      <i id="sync-icon" class="fas fa-rotate"></i> Sync
+    </button>
+  </div>
 </header>
 
+<div class="stats" id="stats">
+  <div class="stat-card ok"><div class="stat-num" id="stat-ok">–</div><div class="stat-label">OK</div><div class="stat-sub">תקין</div></div>
+  <div class="stat-card low"><div class="stat-num" id="stat-low">–</div><div class="stat-label">Low</div><div class="stat-sub">נמוך</div></div>
+  <div class="stat-card critical"><div class="stat-num" id="stat-critical">–</div><div class="stat-label">Critical</div><div class="stat-sub">קריטי</div></div>
+</div>
+
 <div class="content">
-  <div id="done-banner" class="done-banner">
-    <h2>✓ כל הפריטים נספרו!</h2>
-    <p>הספירה נשמרה בהצלחה</p>
-  </div>
+  <div id="items-list"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Loading inventory...</div></div>
+</div>
 
-  <div class="status-bar">
-    <span class="status-label">פריטים</span>
-    <span class="progress-text" id="progress-text">0 / 0</span>
-  </div>
-  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-
-  <div id="items-list"></div>
+<div class="bottom-bar">
+  <button class="btn-report" onclick="sendWhatsApp()">
+    <i class="fab fa-whatsapp" style="font-size:1.2rem;"></i>
+    <div>
+      <div>Send Report to Gilad</div>
+      <div class="btn-report-sub">שלח דוח · גלעד</div>
+    </div>
+  </button>
 </div>
 
 <div id="toast" style="display:none;"></div>
 
 <script>
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbxaAORg5xUnEL_TIQ4q9PKvecn71KX18mF0t3daazQYkRNvnfSKSSeDL67rY1CqMqRdqw/exec';
+  const WHATSAPP_NUMBER = '972526664040';
 
-  let items = [];       // { id, qty, min, counted }
-  let saving = {};      // id → true while saving
+  // Hebrew names + emojis for known vegetables
+  const VEGE_MAP = {
+    'עגבנייה':        { en: 'Tomato',          emoji: '🍅', bg: '#fef2f2' },
+    'עגבניות':        { en: 'Tomatoes',         emoji: '🍅', bg: '#fef2f2' },
+    'עגבניות שרי':    { en: 'Cherry Tomatoes',  emoji: '🍅', bg: '#fef2f2' },
+    'חציל':           { en: 'Eggplant',         emoji: '🍆', bg: '#faf5ff' },
+    'קישוא':          { en: 'Zucchini',         emoji: '🥒', bg: '#f0fdf4' },
+    'פלפל':           { en: 'Pepper',           emoji: '🫑', bg: '#f0fdf4' },
+    'פלפל אדום':      { en: 'Red Pepper',       emoji: '🌶️', bg: '#fef2f2' },
+    'מלפפון':         { en: 'Cucumber',         emoji: '🥒', bg: '#f0fdf4' },
+    'גזר':            { en: 'Carrot',           emoji: '🥕', bg: '#fff7ed' },
+    'בצל':            { en: 'Onion',            emoji: '🧅', bg: '#fefce8' },
+    'שום':            { en: 'Garlic',           emoji: '🧄', bg: '#fefce8' },
+    'תפוח אדמה':      { en: 'Potato',           emoji: '🥔', bg: '#fefce8' },
+    'בטטה':           { en: 'Sweet Potato',     emoji: '🍠', bg: '#fff7ed' },
+    'ברוקולי':        { en: 'Broccoli',         emoji: '🥦', bg: '#f0fdf4' },
+    'כרוב':           { en: 'Cabbage',          emoji: '🥬', bg: '#f0fdf4' },
+    'חסה':            { en: 'Lettuce',          emoji: '🥬', bg: '#f0fdf4' },
+    'תרד':            { en: 'Spinach',          emoji: '🥬', bg: '#f0fdf4' },
+    'פטרוזיליה':      { en: 'Parsley',          emoji: '🌿', bg: '#f0fdf4' },
+    'כוסברה':         { en: 'Cilantro',         emoji: '🌿', bg: '#f0fdf4' },
+    'לימון':          { en: 'Lemon',            emoji: '🍋', bg: '#fefce8' },
+    'דלעת':           { en: 'Pumpkin',          emoji: '🎃', bg: '#fff7ed' },
+    'אבוקדו':         { en: 'Avocado',          emoji: '🥑', bg: '#f0fdf4' },
+    'תירס':           { en: 'Corn',             emoji: '🌽', bg: '#fefce8' },
+    'פטריות':         { en: 'Mushrooms',        emoji: '🍄', bg: '#faf5ff' },
+  };
+
+  let items = [];
+  let openCard = null;
+
+  function getVegeInfo(id) {
+    for (const [he, info] of Object.entries(VEGE_MAP)) {
+      if (id.includes(he)) return info;
+    }
+    return { en: id, emoji: '🥬', bg: '#f0fdf4' };
+  }
+
+  function getStatus(qty, min) {
+    if (qty === 0)       return 'critical';
+    if (qty < min)       return 'low';
+    return 'ok';
+  }
+
+  function getStatusLabel(status) {
+    if (status === 'critical') return '✕ Critical';
+    if (status === 'low')      return '⚠ Low Stock';
+    return '✓ OK';
+  }
+
+  function getBarPct(qty, min) {
+    if (!min || min === 0) return qty > 0 ? 100 : 0;
+    return Math.min(100, Math.round((qty / (min * 2)) * 100));
+  }
 
   function showToast(msg, color = '#1e293b') {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.style.cssText = `display:block; background:${color}; color:white; padding:10px 20px; border-radius:12px; font-weight:700; font-size:0.85rem; box-shadow:0 4px 16px rgba(0,0,0,0.2);`;
-    setTimeout(() => t.style.display = 'none', 2500);
+    t.style.cssText = `display:block; background:${color}; color:white; padding:10px 20px; border-radius:12px; font-weight:700; font-size:0.82rem; box-shadow:0 4px 16px rgba(0,0,0,0.2);`;
+    setTimeout(() => t.style.display = 'none', 2000);
   }
 
   async function api(action, payload = null) {
@@ -225,13 +307,14 @@
   async function loadItems() {
     const icon = document.getElementById('sync-icon');
     icon.classList.add('fa-spin');
-    document.getElementById('items-list').innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i>טוען פריטים...</div>`;
+    openCard = null;
     try {
       const data = await api('getBootstrap');
       items = (data.inventory || []).map(i => ({ ...i, counted: false }));
       renderItems();
     } catch (e) {
-      document.getElementById('items-list').innerHTML = `<div class="loading"><i class="fas fa-triangle-exclamation"></i>שגיאה בטעינה<br><small style="font-weight:500">${e.message}</small></div>`;
+      document.getElementById('items-list').innerHTML =
+        `<div class="loading"><i class="fas fa-triangle-exclamation"></i>Failed to load<br><small style="font-weight:500">${e.message}</small></div>`;
     }
     icon.classList.remove('fa-spin');
   }
@@ -241,90 +324,151 @@
     list.innerHTML = '';
 
     if (!items.length) {
-      list.innerHTML = '<div class="loading"><i class="fas fa-box-open"></i>אין פריטים</div>';
+      list.innerHTML = '<div class="loading"><i class="fas fa-box-open"></i>No items found</div>';
+      updateStats();
       return;
     }
 
     items.forEach(item => {
+      const info   = getVegeInfo(item.id);
+      const status = getStatus(Number(item.qty), Number(item.min));
+      const pct    = getBarPct(Number(item.qty), Number(item.min));
+
       const card = document.createElement('div');
-      card.className = `item-card${item.counted ? ' counted' : ''}`;
+      let cardClass = 'item-card';
+      if (item.counted) cardClass += ' counted';
+      else if (status === 'critical') cardClass += ' critical-stock';
+      else if (status === 'low')      cardClass += ' low-stock';
+      card.className = cardClass;
       card.id = `card-${item.id}`;
+
       card.innerHTML = `
-        <div class="item-name">
-          <span>${item.id}</span>
-          <span class="counted-badge"><i class="fas fa-check"></i> נספר</span>
+        <div class="item-main">
+          <div class="item-icon" style="background:${info.bg}">${info.emoji}</div>
+          <div class="item-info">
+            <div class="item-name">${info.en}</div>
+            <div class="item-status ${status}" id="status-${item.id}">${getStatusLabel(status)}</div>
+          </div>
+          <div class="item-qty">
+            <div class="item-qty-num" id="qty-${item.id}">${item.qty}</div>
+            <div class="item-qty-unit">Cartons<br>קרטונים</div>
+          </div>
         </div>
-        <div class="counter">
-          <button class="counter-btn btn-minus" onclick="change('${item.id}', -1)">−</button>
-          <input class="counter-input" id="input-${item.id}" type="number" value="${item.qty ?? 0}" min="0"
-            oninput="onInput('${item.id}', this.value)">
-          <button class="counter-btn btn-plus" onclick="change('${item.id}', 1)">+</button>
+        <div class="item-bar">
+          <div class="bar-track"><div class="bar-fill ${status}" id="bar-${item.id}" style="width:${pct}%"></div></div>
         </div>
-        <button class="btn-save-item" id="btn-${item.id}" onclick="saveItem('${item.id}')">
-          <i class="fas fa-cloud-arrow-up"></i> שמור
-        </button>`;
+        <button class="btn-count" onclick="toggleCounter('${item.id}')">
+          <span class="coin">●</span>
+          Count Inventory · ספירת מלאי
+        </button>
+        <div class="counter-expand" id="expand-${item.id}">
+          <div class="counter-row">
+            <button class="cnt-btn cnt-minus" onclick="adjustQty('${item.id}', -1)">−</button>
+            <input class="cnt-input" id="input-${item.id}" type="number" value="${item.qty}" min="0">
+            <button class="cnt-btn cnt-plus"  onclick="adjustQty('${item.id}',  1)">+</button>
+            <button class="cnt-confirm" id="confirm-${item.id}" onclick="confirmCount('${item.id}')">
+              <i class="fas fa-check"></i>
+            </button>
+          </div>
+        </div>`;
       list.appendChild(card);
     });
 
-    updateProgress();
+    updateStats();
   }
 
-  function onInput(id, val) {
-    const item = items.find(x => x.id === id);
-    if (item) item.qty = Math.max(0, Number(val) || 0);
+  function toggleCounter(id) {
+    const expand = document.getElementById(`expand-${id}`);
+    if (expand.classList.contains('open')) {
+      expand.classList.remove('open');
+      openCard = null;
+    } else {
+      if (openCard) document.getElementById(`expand-${openCard}`)?.classList.remove('open');
+      expand.classList.add('open');
+      openCard = id;
+      setTimeout(() => document.getElementById(`input-${id}`)?.focus(), 50);
+    }
   }
 
-  function change(id, delta) {
-    const item = items.find(x => x.id === id);
-    if (!item) return;
-    item.qty = Math.max(0, (Number(item.qty) || 0) + delta);
+  function adjustQty(id, delta) {
     const input = document.getElementById(`input-${id}`);
-    if (input) { input.value = item.qty; input.classList.add('changed'); }
+    if (!input) return;
+    input.value = Math.max(0, (Number(input.value) || 0) + delta);
   }
 
-  async function saveItem(id) {
-    if (saving[id]) return;
-    const item = items.find(x => x.id === id);
+  async function confirmCount(id) {
+    const item    = items.find(x => x.id === id);
     if (!item) return;
+    const qty     = Math.max(0, Number(document.getElementById(`input-${id}`)?.value) || 0);
+    const confirm = document.getElementById(`confirm-${id}`);
 
-    const qty = Number(document.getElementById(`input-${id}`)?.value) || 0;
-    item.qty = qty;
-
-    saving[id] = true;
-    const btn = document.getElementById(`btn-${id}`);
-    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> שומר...';
+    confirm.classList.add('saving');
+    confirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
     try {
-      await api('updateInventory', { id: item.id, qty: item.qty, min: item.min });
+      await api('updateInventory', { id: item.id, qty, min: item.min });
+      item.qty     = qty;
       item.counted = true;
+
+      // update display
+      document.getElementById(`qty-${id}`).textContent = qty;
+      const status = getStatus(qty, Number(item.min));
+      const pct    = getBarPct(qty, Number(item.min));
+      document.getElementById(`status-${id}`).className = `item-status ${status}`;
+      document.getElementById(`status-${id}`).textContent = getStatusLabel(status);
+      const bar = document.getElementById(`bar-${id}`);
+      bar.style.width = pct + '%';
+      bar.className = `bar-fill ${status}`;
+
       const card = document.getElementById(`card-${id}`);
-      if (card) card.className = 'item-card counted';
-      if (btn)  btn.innerHTML = '<i class="fas fa-check"></i> נשמר';
-      showToast(`✓ ${item.id} נשמר`, '#16a34a');
-      updateProgress();
+      card.className = 'item-card counted';
+      document.getElementById(`expand-${id}`).classList.remove('open');
+      openCard = null;
+
+      showToast(`✓ ${item.id} saved`, '#16a34a');
+      updateStats();
     } catch (e) {
-      if (btn) btn.innerHTML = '<i class="fas fa-cloud-arrow-up"></i> שמור';
-      showToast('שגיאה בשמירה', '#ef4444');
+      showToast('Save failed', '#ef4444');
     }
-    saving[id] = false;
+
+    confirm.classList.remove('saving');
+    confirm.innerHTML = '<i class="fas fa-check"></i>';
   }
 
-  function updateProgress() {
-    const total   = items.length;
-    const counted = items.filter(i => i.counted).length;
-    const pct     = total ? Math.round((counted / total) * 100) : 0;
-
-    document.getElementById('progress-text').textContent = `${counted} / ${total}`;
-    document.getElementById('progress-fill').style.width = pct + '%';
-
-    const banner = document.getElementById('done-banner');
-    if (counted === total && total > 0) banner.classList.add('show');
-    else banner.classList.remove('show');
+  function updateStats() {
+    const ok       = items.filter(i => getStatus(Number(i.qty), Number(i.min)) === 'ok').length;
+    const low      = items.filter(i => getStatus(Number(i.qty), Number(i.min)) === 'low').length;
+    const critical = items.filter(i => getStatus(Number(i.qty), Number(i.min)) === 'critical').length;
+    document.getElementById('stat-ok').textContent       = ok;
+    document.getElementById('stat-low').textContent      = low;
+    document.getElementById('stat-critical').textContent = critical;
   }
 
-  // Init
-  document.getElementById('header-date').textContent =
-    new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+  function sendWhatsApp() {
+    const date = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+    const time = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+    let lines = [`🥬 *דוח מלאי ירקות*`, `📅 ${date} | ${time}`, ``];
+
+    items.forEach(item => {
+      const status = getStatus(Number(item.qty), Number(item.min));
+      const icon   = status === 'critical' ? '🔴' : status === 'low' ? '🟡' : '🟢';
+      const info   = getVegeInfo(item.id);
+      lines.push(`${icon} ${item.id} (${info.en}): *${item.qty}* קרטונים`);
+    });
+
+    const counted  = items.filter(i => i.counted).length;
+    const critical = items.filter(i => getStatus(Number(i.qty), Number(i.min)) === 'critical').length;
+    const low      = items.filter(i => getStatus(Number(i.qty), Number(i.min)) === 'low').length;
+
+    lines.push(``);
+    lines.push(`✅ נספרו: ${counted}/${items.length} פריטים`);
+    if (critical > 0) lines.push(`🔴 קריטי: ${critical} פריטים`);
+    if (low      > 0) lines.push(`🟡 נמוך:  ${low} פריטים`);
+
+    const msg = lines.join('\n');
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
 
   loadItems();
 </script>
