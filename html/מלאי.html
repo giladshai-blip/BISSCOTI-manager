@@ -378,7 +378,7 @@
         renderOrders();
     }
 
-    window.onload = () => loadData();
+    window.onload = () => { loadData(); setInterval(loadData, 10000); };
 </script>
 </body>
 </html>

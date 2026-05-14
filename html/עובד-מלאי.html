@@ -500,7 +500,37 @@
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
+  async function silentSync() {
+    try {
+      const data = await api('getBootstrap');
+      const fresh = data.inventory || [];
+      fresh.forEach(f => {
+        const item = items.find(x => x.id === f.id);
+        // only update items the worker hasn't counted yet this session
+        if (item && !item.counted) {
+          item.qty = f.qty;
+          item.min = f.min;
+          const qtyEl = document.getElementById(`qty-${item.id}`);
+          // don't overwrite input if counter is open for this item
+          if (openCard !== item.id) {
+            const input = document.getElementById(`input-${item.id}`);
+            if (input) input.value = f.qty;
+          }
+          if (qtyEl) qtyEl.textContent = f.qty;
+          const status = getStatus(Number(f.qty), Number(f.min));
+          const pct    = getBarPct(Number(f.qty), Number(f.min));
+          const statusEl = document.getElementById(`status-${item.id}`);
+          const barEl    = document.getElementById(`bar-${item.id}`);
+          if (statusEl) { statusEl.className = `item-status ${status}`; statusEl.textContent = getStatusLabel(status); }
+          if (barEl)    { barEl.style.width = pct + '%'; barEl.className = `bar-fill ${status}`; }
+        }
+      });
+      updateStats();
+    } catch (_) { /* silent — don't toast on background errors */ }
+  }
+
   loadItems();
+  setInterval(silentSync, 10000);
 </script>
 </body>
 </html>
