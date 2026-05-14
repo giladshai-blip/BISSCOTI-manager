@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="apple-mobile-web-app-title" content="ספירת מלאי">
+  <title>ספירת מלאי</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --green: #16a34a;
+      --green-light: #f0fdf4;
+      --green-border: #bbf7d0;
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: 'Heebo', sans-serif;
+      background: #f4f7fb;
+      color: #0f172a;
+      direction: rtl;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    .header {
+      position: fixed; top: 0; right: 0; left: 0; z-index: 50;
+      background: var(--green);
+      padding: calc(14px + var(--safe-top)) 20px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(22,163,74,0.3);
+    }
+
+    .header-title { display: flex; align-items: center; gap: 10px; }
+    .header-title h1 { font-size: 1.2rem; font-weight: 900; color: white; }
+    .header-title span { font-size: 0.75rem; color: rgba(255,255,255,0.75); font-weight: 600; }
+
+    .btn-sync {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      display: flex; align-items: center; justify-content: center;
+      color: white; cursor: pointer; font-size: 16px;
+    }
+
+    /* ── Content ── */
+    .content {
+      padding-top: calc(72px + var(--safe-top));
+      padding-bottom: calc(100px + var(--safe-bottom));
+      padding-left: 16px; padding-right: 16px;
+      max-width: 600px; margin: 0 auto;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      margin: 16px 0 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .status-label { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .progress-text { font-size: 0.75rem; font-weight: 700; color: var(--green); }
+
+    .progress-bar {
+      height: 4px; background: #e2e8f0; border-radius: 99px; margin-bottom: 16px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: var(--green); border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── Item Card ── */
+    .item-card {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 18px 16px;
+      margin-bottom: 10px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .item-card.counted {
+      border-color: var(--green-border);
+      background: var(--green-light);
+    }
+
+    .item-name {
+      font-size: 1.05rem; font-weight: 800; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .counted-badge {
+      font-size: 0.65rem; font-weight: 800; color: var(--green);
+      background: white; border: 1.5px solid var(--green-border);
+      padding: 2px 8px; border-radius: 20px;
+      display: none;
+    }
+    .item-card.counted .counted-badge { display: inline-flex; align-items: center; gap: 4px; }
+
+    /* ── Counter ── */
+    .counter {
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .counter-btn {
+      width: 52px; height: 52px; border-radius: 14px; border: none; cursor: pointer;
+      font-size: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.1s, opacity 0.2s;
+      flex-shrink: 0;
+    }
+    .counter-btn:active { transform: scale(0.9); }
+    .btn-minus { background: #fee2e2; color: #ef4444; }
+    .btn-plus  { background: #dcfce7; color: #16a34a; }
+
+    .counter-input {
+      flex: 1; height: 52px; text-align: center;
+      font-size: 1.6rem; font-weight: 900; color: #0f172a;
+      border: 2px solid #e2e8f0; border-radius: 14px;
+      background: white; font-family: 'Heebo', sans-serif;
+      -moz-appearance: textfield;
+    }
+    .counter-input::-webkit-outer-spin-button,
+    .counter-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .counter-input:focus { outline: none; border-color: var(--green); }
+    .item-card.counted .counter-input { border-color: var(--green-border); }
+
+    /* ── Save Button ── */
+    .btn-save-item {
+      width: 100%; margin-top: 12px; padding: 13px;
+      background: var(--green); color: white; border: none;
+      border-radius: 14px; font-size: 0.95rem; font-weight: 800;
+      cursor: pointer; font-family: 'Heebo', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-save-item:active { transform: scale(0.98); background: #15803d; }
+    .item-card.counted .btn-save-item { background: #15803d; }
+
+    /* ── Done Banner ── */
+    .done-banner {
+      display: none;
+      background: var(--green); color: white;
+      border-radius: 18px; padding: 24px 20px;
+      text-align: center; margin-bottom: 16px;
+    }
+    .done-banner.show { display: block; }
+    .done-banner h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 6px; }
+    .done-banner p  { font-size: 0.85rem; opacity: 0.85; }
+
+    /* ── Loading / Empty ── */
+    .loading {
+      text-align: center; padding: 60px 20px;
+      color: #94a3b8; font-weight: 700;
+    }
+    .loading i { font-size: 2rem; display: block; margin-bottom: 12px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; z-index: 9999;
+      bottom: calc(20px + var(--safe-bottom));
+      left: 50%; transform: translateX(-50%);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-title">
+    <div>
+      <h1><i class="fas fa-boxes" style="margin-left:8px;"></i>ספירת מלאי</h1>
+      <span id="header-date"></span>
+    </div>
+  </div>
+  <button class="btn-sync" onclick="loadItems()" title="רענן">
+    <i id="sync-icon" class="fas fa-rotate"></i>
+  </button>
+</header>
+
+<div class="content">
+  <div id="done-banner" class="done-banner">
+    <h2>✓ כל הפריטים נספרו!</h2>
+    <p>הספירה נשמרה בהצלחה</p>
+  </div>
+
+  <div class="status-bar">
+    <span class="status-label">פריטים</span>
+    <span class="progress-text" id="progress-text">0 / 0</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+  <div id="items-list"></div>
+</div>
+
+<div id="toast" style="display:none;"></div>
+
+<script>
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzyCwz05MeDnRTyKwPXgQc96kAEnJoNyUe9ypqsXZgdEJZ5YErOYIhObnYqzRyML5Kl/exec';
+
+  let items = [];       // { id, qty, min, counted }
+  let saving = {};      // id → true while saving
+
+  function showToast(msg, color = '#1e293b') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.cssText = `display:block; background:${color}; color:white; padding:10px 20px; border-radius:12px; font-weight:700; font-size:0.85rem; box-shadow:0 4px 16px rgba(0,0,0,0.2);`;
+    setTimeout(() => t.style.display = 'none', 2500);
+  }
+
+  async function api(action, payload = null) {
+    const url = `${GAS_URL}?action=${action}&payload=${encodeURIComponent(JSON.stringify(payload))}&t=${Date.now()}`;
+    const res  = await fetch(url, { redirect: 'follow' });
+    const json = await res.json();
+    if (json.status === 'error') throw new Error(json.message);
+    return json.data;
+  }
+
+  async function loadItems() {
+    const icon = document.getElementById('sync-icon');
+    icon.classList.add('fa-spin');
+    document.getElementById('items-list').innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i>טוען פריטים...</div>`;
+    try {
+      const data = await api('getBootstrap');
+      items = (data.inventory || []).map(i => ({ ...i, counted: false }));
+      renderItems();
+    } catch (e) {
+      document.getElementById('items-list').innerHTML = `<div class="loading"><i class="fas fa-triangle-exclamation"></i>שגיאה בטעינה<br><small style="font-weight:500">${e.message}</small></div>`;
+    }
+    icon.classList.remove('fa-spin');
+  }
+
+  function renderItems() {
+    const list = document.getElementById('items-list');
+    list.innerHTML = '';
+
+    if (!items.length) {
+      list.innerHTML = '<div class="loading"><i class="fas fa-box-open"></i>אין פריטים</div>';
+      return;
+    }
+
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = `item-card${item.counted ? ' counted' : ''}`;
+      card.id = `card-${item.id}`;
+      card.innerHTML = `
+        <div class="item-name">
+          <span>${item.id}</span>
+          <span class="counted-badge"><i class="fas fa-check"></i> נספר</span>
+        </div>
+        <div class="counter">
+          <button class="counter-btn btn-minus" onclick="change('${item.id}', -1)">−</button>
+          <input class="counter-input" id="input-${item.id}" type="number" value="${item.qty ?? 0}" min="0"
+            oninput="onInput('${item.id}', this.value)">
+          <button class="counter-btn btn-plus" onclick="change('${item.id}', 1)">+</button>
+        </div>
+        <button class="btn-save-item" id="btn-${item.id}" onclick="saveItem('${item.id}')">
+          <i class="fas fa-cloud-arrow-up"></i> שמור
+        </button>`;
+      list.appendChild(card);
+    });
+
+    updateProgress();
+  }
+
+  function onInput(id, val) {
+    const item = items.find(x => x.id === id);
+    if (item) item.qty = Math.max(0, Number(val) || 0);
+  }
+
+  function change(id, delta) {
+    const item = items.find(x => x.id === id);
+    if (!item) return;
+    item.qty = Math.max(0, (Number(item.qty) || 0) + delta);
+    const input = document.getElementById(`input-${id}`);
+    if (input) { input.value = item.qty; input.classList.add('changed'); }
+  }
+
+  async function saveItem(id) {
+    if (saving[id]) return;
+    const item = items.find(x => x.id === id);
+    if (!item) return;
+
+    const qty = Number(document.getElementById(`input-${id}`)?.value) || 0;
+    item.qty = qty;
+
+    saving[id] = true;
+    const btn = document.getElementById(`btn-${id}`);
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> שומר...';
+
+    try {
+      await api('updateInventory', { id: item.id, qty: item.qty, min: item.min });
+      item.counted = true;
+      const card = document.getElementById(`card-${id}`);
+      if (card) card.className = 'item-card counted';
+      if (btn)  btn.innerHTML = '<i class="fas fa-check"></i> נשמר';
+      showToast(`✓ ${item.id} נשמר`, '#16a34a');
+      updateProgress();
+    } catch (e) {
+      if (btn) btn.innerHTML = '<i class="fas fa-cloud-arrow-up"></i> שמור';
+      showToast('שגיאה בשמירה', '#ef4444');
+    }
+    saving[id] = false;
+  }
+
+  function updateProgress() {
+    const total   = items.length;
+    const counted = items.filter(i => i.counted).length;
+    const pct     = total ? Math.round((counted / total) * 100) : 0;
+
+    document.getElementById('progress-text').textContent = `${counted} / ${total}`;
+    document.getElementById('progress-fill').style.width = pct + '%';
+
+    const banner = document.getElementById('done-banner');
+    if (counted === total && total > 0) banner.classList.add('show');
+    else banner.classList.remove('show');
+  }
+
+  // Init
+  document.getElementById('header-date').textContent =
+    new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  loadItems();
+</script>
+</body>
+</html>
