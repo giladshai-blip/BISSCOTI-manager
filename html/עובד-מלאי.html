@@ -160,48 +160,45 @@
     /* ── Counter Expand ── */
     .counter-expand {
       display: none;
-      padding: 14px 14px 16px;
+      padding: 12px 14px 16px;
       background: #f8fafc; border-top: 1px solid #f1f5f9;
     }
     .counter-expand.open { display: block; }
 
-    .counter-row { display: flex; align-items: center; gap: 10px; }
-
-    /* 56px = comfortable finger target */
-    .cnt-btn {
-      width: 56px; height: 56px;
-      border-radius: 14px; border: none; cursor: pointer;
-      font-size: 26px; font-weight: 900;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      transition: transform 0.08s, opacity 0.1s;
-      user-select: none;
-    }
-    .cnt-btn:active { transform: scale(0.88); opacity: 0.8; }
-    .cnt-minus { background: #fee2e2; color: var(--red); }
-    .cnt-plus  { background: #dcfce7; color: var(--green); }
-
+    /* Row 1: big number input */
     .cnt-input {
-      flex: 1; height: 56px; text-align: center;
-      /* 16px minimum prevents iOS auto-zoom */
-      font-size: 1.6rem; font-weight: 800; color: #0f172a;
+      width: 100%; height: 64px; text-align: center;
+      font-size: 2rem; font-weight: 900; color: #0f172a;
       border: 2px solid #e2e8f0; border-radius: 14px;
       background: white; font-family: 'Inter', sans-serif;
+      margin-bottom: 10px;
       -moz-appearance: textfield;
     }
     .cnt-input::-webkit-outer-spin-button,
     .cnt-input::-webkit-inner-spin-button { -webkit-appearance: none; }
     .cnt-input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
 
+    /* Row 2: three equal buttons */
+    .cnt-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+    .cnt-btn {
+      height: 54px; border-radius: 14px; border: none; cursor: pointer;
+      font-size: 22px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.08s, opacity 0.1s;
+      user-select: none;
+    }
+    .cnt-btn:active { transform: scale(0.92); opacity: 0.8; }
+    .cnt-minus { background: #fee2e2; color: var(--red); }
+    .cnt-plus  { background: #dcfce7; color: var(--green); }
+
     .cnt-confirm {
-      width: 56px; height: 56px;
-      border-radius: 14px; border: none; cursor: pointer;
+      height: 54px; border-radius: 14px; border: none; cursor: pointer;
       background: var(--green); color: white; font-size: 20px;
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
       transition: transform 0.08s, opacity 0.1s;
     }
-    .cnt-confirm:active { transform: scale(0.88); opacity: 0.85; }
+    .cnt-confirm:active { transform: scale(0.92); opacity: 0.85; }
     .cnt-confirm.saving { background: #94a3b8; pointer-events: none; }
 
     /* ── Bottom bar ── */
@@ -388,9 +385,10 @@
           Count Inventory · ספירת מלאי
         </button>
         <div class="counter-expand" id="expand-${item.id}">
-          <div class="counter-row">
+          <input class="cnt-input" id="input-${item.id}" type="number" value="${item.qty}" min="0"
+            oninput="onInput('${item.id}', this.value)">
+          <div class="cnt-btns">
             <button class="cnt-btn cnt-minus" onclick="adjustQty('${item.id}', -1)">−</button>
-            <input class="cnt-input" id="input-${item.id}" type="number" value="${item.qty}" min="0">
             <button class="cnt-btn cnt-plus"  onclick="adjustQty('${item.id}',  1)">+</button>
             <button class="cnt-confirm" id="confirm-${item.id}" onclick="confirmCount('${item.id}')">
               <i class="fas fa-check"></i>
@@ -418,6 +416,11 @@
         document.getElementById(`input-${id}`)?.focus();
       }, 80);
     }
+  }
+
+  function onInput(id, val) {
+    const item = items.find(x => x.id === id);
+    if (item) item.qty = Math.max(0, Number(val) || 0);
   }
 
   function adjustQty(id, delta) {
