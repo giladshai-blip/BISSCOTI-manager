@@ -319,12 +319,24 @@
     setTimeout(() => t.style.display = 'none', 2000);
   }
 
-  async function api(action, payload = null) {
+  async function api(action, payload = null, attempt = 1) {
     const url = `${GAS_URL}?action=${action}&payload=${encodeURIComponent(JSON.stringify(payload))}&t=${Date.now()}`;
-    const res  = await fetch(url, { redirect: 'follow' });
-    const json = await res.json();
-    if (json.status === 'error') throw new Error(json.message);
-    return json.data;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000); // 12s timeout
+    try {
+      const res  = await fetch(url, { redirect: 'follow', signal: controller.signal });
+      clearTimeout(timeout);
+      const json = await res.json();
+      if (json.status === 'error') throw new Error(json.message);
+      return json.data;
+    } catch (e) {
+      clearTimeout(timeout);
+      if (attempt < 3) {
+        await new Promise(r => setTimeout(r, 2000 * attempt)); // wait 2s, 4s
+        return api(action, payload, attempt + 1);
+      }
+      throw e;
+    }
   }
 
   async function loadItems() {
