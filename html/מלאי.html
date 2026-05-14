@@ -63,6 +63,47 @@
 
         .card { background: white; border: 1px solid #dadce0; border-radius: 14px; padding: 16px; }
 
+        /* ── View toggle ── */
+        .view-toggle-btn {
+            width: 34px; height: 34px; border-radius: 8px; border: 1px solid #dadce0;
+            background: white; color: #5f6368; cursor: pointer; font-size: 14px;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .view-toggle-btn.active-toggle { background: #1a73e8; color: white; border-color: #1a73e8; }
+
+        /* ── Counter (+/−) ── */
+        .order-counter { display: flex; align-items: center; gap: 6px; }
+        .order-counter-btn {
+            width: 36px; height: 36px; border-radius: 10px; border: none; cursor: pointer;
+            font-size: 18px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: transform 0.1s, opacity 0.1s;
+        }
+        .order-counter-btn:active { transform: scale(0.88); }
+        .order-btn-minus { background: #fee2e2; color: #dc2626; }
+        .order-btn-plus  { background: #dcfce7; color: #16a34a; }
+        .order-counter-input {
+            width: 52px; height: 36px; text-align: center; font-size: 1rem; font-weight: 800;
+            border: 2px solid #bfdbfe; border-radius: 10px; background: white;
+            font-family: 'Assistant', sans-serif; -moz-appearance: textfield;
+        }
+        .order-counter-input::-webkit-outer-spin-button,
+        .order-counter-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .order-counter-input:focus { outline: none; border-color: #1a73e8; }
+
+        /* ── List mode ── */
+        .list-row {
+            background: white; border: 1px solid #dadce0; border-radius: 12px;
+            padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+            margin-bottom: 6px;
+        }
+        .list-row.low-row { background: #fff7ed; border-color: #fed7aa; }
+        .list-row-name { font-weight: 800; font-size: 0.9rem; flex: 1; min-width: 0; }
+        .list-row-stats { font-size: 0.75rem; font-weight: 700; color: #5f6368; text-align: center; min-width: 60px; }
+        .list-row-stats span { display: block; }
+        .list-row-stats .after-val { color: #16a34a; }
+        .list-row-stats .after-low { color: #ea580c; }
+
         #toast { position: fixed; z-index: 9999; bottom: calc(80px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); }
         @media (min-width: 768px) { #toast { bottom: 32px; right: 32px; left: auto; transform: none; } }
     </style>
@@ -205,26 +246,59 @@
             </div>
         </header>
         <div id="sync-worker-status" class="hidden mb-4 p-3 rounded-xl text-sm font-bold text-center"></div>
-        <div id="inventory-grid" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+        <!-- View toggle for inventory -->
+        <div class="flex justify-end mb-3 gap-1">
+            <button onclick="setView('inv','grid')" id="inv-btn-grid" class="view-toggle-btn active-toggle" title="אריח">
+                <i class="fa-solid fa-grip"></i>
+            </button>
+            <button onclick="setView('inv','list')" id="inv-btn-list" class="view-toggle-btn" title="רשימה">
+                <i class="fa-solid fa-list"></i>
+            </button>
+        </div>
+        <div id="inventory-grid"></div>
     </div>
 
     <!-- Orders View -->
     <div id="view-orders" class="view hidden">
-        <header class="flex justify-between items-center mb-5">
-            <button onclick="clearOrders()" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100 text-sm">
-                <i class="fa-solid fa-trash ml-1"></i> נקה הכל
+        <header class="flex justify-between items-center mb-4">
+            <button onclick="clearOrders()" class="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl font-bold border border-red-100 text-sm">
+                <i class="fa-solid fa-trash ml-1"></i> נקה
             </button>
-            <button onclick="sendOrderToEliyahu()" class="bg-green-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg text-sm">
+            <div class="flex gap-1">
+                <button onclick="setView('ord','grid')" id="ord-btn-grid" class="view-toggle-btn active-toggle" title="אריח">
+                    <i class="fa-solid fa-grip"></i>
+                </button>
+                <button onclick="setView('ord','list')" id="ord-btn-list" class="view-toggle-btn" title="רשימה">
+                    <i class="fa-solid fa-list"></i>
+                </button>
+            </div>
+            <button onclick="sendOrderToEliyahu()" class="bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg text-sm">
                 <i class="fa-brands fa-whatsapp ml-1"></i> שלח לאליהו
             </button>
         </header>
-        <div id="orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        <div id="orders-grid"></div>
     </div>
 
 </main>
 
 <script>
     let editMinMode = false;
+    let invView = 'grid';
+    let ordView = 'grid';
+
+    function setView(section, mode) {
+        if (section === 'inv') {
+            invView = mode;
+            document.getElementById('inv-btn-grid').classList.toggle('active-toggle', mode === 'grid');
+            document.getElementById('inv-btn-list').classList.toggle('active-toggle', mode === 'list');
+            renderInventory();
+        } else {
+            ordView = mode;
+            document.getElementById('ord-btn-grid').classList.toggle('active-toggle', mode === 'grid');
+            document.getElementById('ord-btn-list').classList.toggle('active-toggle', mode === 'list');
+            renderOrders();
+        }
+    }
 
     function switchView(id) {
         document.querySelectorAll('.view').forEach(v => { v.classList.add('hidden'); v.classList.remove('block'); });
@@ -273,26 +347,47 @@
         const g = document.getElementById('inventory-grid');
         if (!g) return;
         g.innerHTML = '';
+        g.className = invView === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 gap-3' : '';
+
         inventory.forEach(i => {
             const low = Number(i.qty) < Number(i.min);
-            const c = document.createElement('div');
-            c.className = `card shadow-sm ${low ? 'border-orange-300 bg-orange-50' : 'border-gray-100'}`;
-            c.innerHTML = `
-                <div class="flex justify-between items-center mb-3">
-                    <h4 class="font-black text-gray-800">${i.id}</h4>
-                    <span class="text-[10px] px-2 py-1 rounded-lg font-black ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span>
-                </div>
-                <div class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600">
-                    <span>מלאי נוכחי:</span>
+            const c   = document.createElement('div');
+
+            if (invView === 'grid') {
+                c.className = `card shadow-sm ${low ? 'border-orange-300 bg-orange-50' : 'border-gray-100'}`;
+                c.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-black text-gray-800">${i.id}</h4>
+                        <span class="text-[10px] px-2 py-1 rounded-lg font-black ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600">
+                        <span>מלאי נוכחי:</span>
+                        <input type="number" value="${i.qty}" oninput="updateInv('${i.id}', this.value, undefined)"
+                            class="w-20 p-1 border rounded-lg font-black text-blue-700 bg-white text-center">
+                    </div>
+                    <div class="flex items-center justify-between gap-2 text-xs mt-3 font-bold ${editMinMode ? 'opacity-100' : 'opacity-40'}">
+                        <span>מינימום:</span>
+                        <input type="number" value="${i.min}" oninput="updateInv('${i.id}', undefined, this.value)"
+                            ${editMinMode ? '' : 'disabled'}
+                            class="w-20 p-1 border rounded-lg text-center ${editMinMode ? 'border-blue-400 text-blue-700' : ''}">
+                    </div>`;
+            } else {
+                c.className = `list-row${low ? ' low-row' : ''}`;
+                c.innerHTML = `
+                    <div class="list-row-name">${i.id}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-black mr-1 ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span>
+                    </div>
+                    <div class="list-row-stats">
+                        <span class="text-gray-400 text-[10px]">מלאי</span>
+                        <span class="${low ? 'text-orange-600' : 'text-gray-800'} text-sm">${i.qty}</span>
+                    </div>
+                    <div class="list-row-stats">
+                        <span class="text-gray-400 text-[10px]">מינימום</span>
+                        <span class="text-gray-800 text-sm">${i.min}</span>
+                    </div>
                     <input type="number" value="${i.qty}" oninput="updateInv('${i.id}', this.value, undefined)"
-                        class="w-20 p-1 border rounded-lg font-black text-blue-700 bg-white text-center">
-                </div>
-                <div class="flex items-center justify-between gap-2 text-xs mt-3 font-bold ${editMinMode ? 'opacity-100' : 'opacity-40'}">
-                    <span>מינימום:</span>
-                    <input type="number" value="${i.min}" oninput="updateInv('${i.id}', undefined, this.value)"
-                        ${editMinMode ? '' : 'disabled'}
-                        class="w-20 p-1 border rounded-lg text-center ${editMinMode ? 'border-blue-400 text-blue-700' : ''}">
-                </div>`;
+                        class="w-16 p-1 border rounded-lg font-black text-blue-700 bg-white text-center text-sm">`;
+            }
             g.appendChild(c);
         });
     }
@@ -311,39 +406,67 @@
         const g = document.getElementById('orders-grid');
         if (!g) return;
         g.innerHTML = '';
+        g.className = ordView === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3' : '';
+
         orders.forEach(o => {
-            const inv  = inventory.find(i => i.id === o.id) || { qty: 0, min: 0 };
-            const cur  = Number(inv.qty) || 0;
-            const min  = Number(inv.min) || 0;
-            const ord  = Number(o.amountToOrder) || 0;
-            const after = cur + ord;
-            const low  = cur < min;
+            const inv     = inventory.find(i => i.id === o.id) || { qty: 0, min: 0 };
+            const cur     = Number(inv.qty)  || 0;
+            const min     = Number(inv.min)  || 0;
+            const ord     = Number(o.amountToOrder) || 0;
+            const after   = cur + ord;
+            const low     = cur < min;
             const okAfter = after >= min;
+            const counter = `
+                <div class="order-counter">
+                    <button class="order-counter-btn order-btn-minus" onclick="adjustOrder('${o.id}',-1)">−</button>
+                    <input class="order-counter-input" type="number" value="${o.amountToOrder || 0}"
+                        oninput="updateOrderAmount('${o.id}',this.value)" min="0">
+                    <button class="order-counter-btn order-btn-plus"  onclick="adjustOrder('${o.id}', 1)">+</button>
+                </div>`;
 
             const c = document.createElement('div');
-            c.className = `card p-4 ${low ? 'bg-orange-50 border-orange-200' : 'border-gray-100 shadow-sm'}`;
-            c.innerHTML = `
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="font-black text-gray-800">${o.id}</h4>
-                    ${low ? '<span class="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black">חסר</span>' : ''}
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                    <div class="text-right space-y-1 flex-grow">
-                        <div class="flex justify-between text-xs font-bold text-gray-500">
-                            <span>מלאי כעת:</span>
-                            <span class="font-black ${low ? 'text-orange-600' : 'text-gray-700'}">${cur}</span>
-                        </div>
-                        <div class="flex justify-between text-xs font-bold text-gray-500">
-                            <span>אחרי הזמנה:</span>
-                            <span id="after-${o.id}" class="font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}">${after}</span>
-                        </div>
+            if (ordView === 'grid') {
+                c.className = `card ${low ? 'bg-orange-50 border-orange-200' : 'border-gray-100 shadow-sm'}`;
+                c.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-black text-gray-800 text-sm">${o.id}</h4>
+                        ${low ? '<span class="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black">חסר</span>' : ''}
                     </div>
-                    <input type="number" placeholder="0" value="${o.amountToOrder || ''}"
-                        oninput="updateOrderAmount('${o.id}', this.value)"
-                        class="w-20 text-center font-black text-blue-700 border-2 border-blue-200 bg-white p-2 rounded-xl shadow-sm outline-none focus:border-blue-500 transition flex-shrink-0">
-                </div>`;
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+                        <span>מלאי כעת:</span>
+                        <span class="font-black ${low ? 'text-orange-600' : 'text-gray-700'}">${cur}</span>
+                    </div>
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-3">
+                        <span>אחרי הזמנה:</span>
+                        <span id="after-${o.id}" class="font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}">${after}</span>
+                    </div>
+                    ${counter}`;
+            } else {
+                c.className = `list-row${low ? ' low-row' : ''}`;
+                c.innerHTML = `
+                    <div class="list-row-name">${o.id}</div>
+                    <div class="list-row-stats">
+                        <span class="text-gray-400 text-[10px]">כעת</span>
+                        <span class="${low ? 'text-orange-600' : 'text-gray-800'} font-black">${cur}</span>
+                    </div>
+                    <div class="list-row-stats">
+                        <span class="text-gray-400 text-[10px]">אחרי</span>
+                        <span id="after-${o.id}" class="font-black ${okAfter ? 'after-val' : 'after-low'}">${after}</span>
+                    </div>
+                    ${counter}`;
+            }
             g.appendChild(c);
         });
+    }
+
+    function adjustOrder(id, delta) {
+        const o = orders.find(x => x.id === id);
+        if (!o) return;
+        const newVal = Math.max(0, (Number(o.amountToOrder) || 0) + delta);
+        o.amountToOrder = newVal;
+        const input = document.querySelector(`.order-counter-input[oninput*="'${id}'"]`);
+        if (input) input.value = newVal;
+        updateOrderAmount(id, newVal);
     }
 
     function updateOrderAmount(id, val) {
