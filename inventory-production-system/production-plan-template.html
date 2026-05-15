@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תוכנית ייצור שבועית</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #34A853;
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            color: #34A853;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .date-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .production-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .production-table thead {
+            background-color: #34A853;
+            color: white;
+        }
+
+        .production-table th {
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+
+        .production-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+            height: 40px;
+        }
+
+        .production-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .production-table tbody tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .product-name {
+            text-align: right;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .day-header {
+            writing-mode: horizontal-tb;
+        }
+
+        .quantity-input {
+            width: 80px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .quantity-input:focus {
+            outline: none;
+            border-color: #34A853;
+            box-shadow: 0 0 5px rgba(52, 168, 83, 0.3);
+        }
+
+        .total-cell {
+            background-color: #e8f5e9;
+            font-weight: bold;
+            color: #34A853;
+        }
+
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+            border-right: 4px solid #34A853;
+        }
+
+        .summary h3 {
+            color: #34A853;
+            margin-bottom: 10px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            border-right: 3px solid #34A853;
+        }
+
+        .summary-item label {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .summary-item value {
+            display: block;
+            color: #34A853;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #34A853;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2d8e47;
+        }
+
+        .btn-secondary {
+            background-color: #4285F4;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #2c63c4;
+        }
+
+        .btn-danger {
+            background-color: #ea4335;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d33425;
+        }
+
+        .print-button {
+            background-color: #fbbc04;
+            color: #333;
+        }
+
+        .print-button:hover {
+            background-color: #f9ab00;
+        }
+
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            .buttons {
+                display: none;
+            }
+
+            .quantity-input {
+                border: 1px solid #ccc;
+                background-color: white;
+            }
+
+            button {
+                display: none;
+            }
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 תוכנית ייצור שבועית</h1>
+            <p>תכנית ייצור מעודכנת ומוכנה להדפסה</p>
+        </div>
+
+        <div class="date-info">
+            <p>עדכון: <span id="updateDate"></span></p>
+        </div>
+
+        <table class="production-table">
+            <thead>
+                <tr>
+                    <th>מוצר</th>
+                    <th class="day-header">ראשון</th>
+                    <th class="day-header">שני</th>
+                    <th class="day-header">שלישי</th>
+                    <th class="day-header">רביעי</th>
+                    <th class="day-header">חמישי</th>
+                    <th class="day-header">שישי</th>
+                    <th class="day-header">סה״כ שבוע</th>
+                </tr>
+            </thead>
+            <tbody id="productionBody">
+                <!-- Will be filled by JavaScript -->
+            </tbody>
+        </table>
+
+        <div class="summary">
+            <h3>📈 סיכום שבועי</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <label>סה״כ יחידות לייצור</label>
+                    <value id="totalUnits">0</value>
+                </div>
+                <div class="summary-item">
+                    <label>מוצרים בתוכנית</label>
+                    <value id="totalProducts">0</value>
+                </div>
+                <div class="summary-item">
+                    <label>ממוצע יומי</label>
+                    <value id="averageDaily">0</value>
+                </div>
+                <div class="summary-item">
+                    <label>יום עם כמות מקסימלית</label>
+                    <value id="maxDay">-</value>
+                </div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="print-button" onclick="window.print()">🖨️ הדפס</button>
+            <button class="btn-secondary" onclick="exportToCSV()">📥 ייצוא לCSV</button>
+            <button class="btn-danger" onclick="resetForm()">🔄 אפס</button>
+        </div>
+
+        <div class="footer">
+            <p>מערכת תוכנית ייצור שבועית | © 2026</p>
+        </div>
+    </div>
+
+    <script>
+        // Set current date
+        document.getElementById('updateDate').textContent = new Date().toLocaleDateString('he-IL');
+
+        // Sample data - will be replaced with actual data from Google Sheets
+        const sampleProducts = [
+            { name: 'מוצר A', needed: 250 },
+            { name: 'מוצר B', needed: 320 },
+            { name: 'מוצר C', needed: 220 }
+        ];
+
+        const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
+
+        function initializeTable() {
+            const tbody = document.getElementById('productionBody');
+            tbody.innerHTML = '';
+
+            sampleProducts.forEach((product, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="product-name">${product.name} <span style="color: #999; font-size: 12px;">(צריך: ${product.needed})</span></td>
+                    ${days.map((_, dayIndex) => `
+                        <td>
+                            <input type="number" class="quantity-input"
+                                   data-product="${index}"
+                                   data-day="${dayIndex}"
+                                   min="0"
+                                   onchange="updateTotals()">
+                        </td>
+                    `).join('')}
+                    <td class="total-cell" id="total-${index}">0</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateTotals() {
+            let grandTotal = 0;
+            let filledProducts = 0;
+
+            sampleProducts.forEach((_, productIndex) => {
+                let productTotal = 0;
+                days.forEach((_, dayIndex) => {
+                    const input = document.querySelector(
+                        `input[data-product="${productIndex}"][data-day="${dayIndex}"]`
+                    );
+                    if (input && input.value) {
+                        productTotal += parseInt(input.value) || 0;
+                    }
+                });
+
+                document.getElementById(`total-${productIndex}`).textContent = productTotal;
+                if (productTotal > 0) filledProducts++;
+                grandTotal += productTotal;
+            });
+
+            // Update summary
+            document.getElementById('totalUnits').textContent = grandTotal;
+            document.getElementById('totalProducts').textContent = filledProducts;
+            document.getElementById('averageDaily').textContent =
+                grandTotal > 0 ? Math.round(grandTotal / 6) : 0;
+        }
+
+        function resetForm() {
+            if (confirm('האם אתה בטוח שרוצה לאפס את כל הנתונים?')) {
+                document.querySelectorAll('.quantity-input').forEach(input => {
+                    input.value = '';
+                });
+                updateTotals();
+            }
+        }
+
+        function exportToCSV() {
+            let csv = 'מוצר,ראשון,שני,שלישי,רביעי,חמישי,שישי,סה"כ\n';
+
+            sampleProducts.forEach((product, productIndex) => {
+                let row = product.name;
+                let total = 0;
+
+                days.forEach((_, dayIndex) => {
+                    const input = document.querySelector(
+                        `input[data-product="${productIndex}"][data-day="${dayIndex}"]`
+                    );
+                    const value = (input && input.value) ? input.value : '0';
+                    row += ',' + value;
+                    total += parseInt(value) || 0;
+                });
+
+                row += ',' + total + '\n';
+                csv += row;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `production-plan-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            initializeTable();
+            updateTotals();
+        });
+    </script>
+</body>
+</html>
