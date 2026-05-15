@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תוכנית ייצור שבועית</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 p-8" dir="rtl">
+    <div id="root"></div>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        const DAYS = [
+            { id: '2026-05-19', label: 'ראשון', short: 'א׳' },
+            { id: '2026-05-20', label: 'שני', short: 'ב׳' },
+            { id: '2026-05-21', label: 'שלישי', short: 'ג׳' },
+            { id: '2026-05-22', label: 'רביעי', short: 'ד׳' },
+            { id: '2026-05-23', label: 'חמישי', short: 'ה׳' },
+            { id: '2026-05-24', label: 'שישי', short: 'ו׳' }
+        ];
+
+        const INITIAL_PRODUCTS = [
+            { id: 1, sku: "37575", name: "לזניה קלאסית בינונית", needed: 250 },
+            { id: 2, sku: "12933", name: "ספנקופיטה אישי", needed: 70 },
+            { id: 3, sku: "12934", name: "ספנקופיטה", needed: 112 },
+            { id: 4, sku: "36028", name: "קיש פטריות בינוני", needed: 38 },
+            { id: 5, sku: "37551", name: "לזניה חצילים", needed: 108 },
+            { id: 6, sku: "37125", name: "פשטידה עגולה", needed: 72 },
+            { id: 7, sku: "36201", name: "קיש תרד", needed: 117 },
+            { id: 8, sku: "36402", name: "קיש ברוקולי גדול", needed: 121 },
+        ];
+
+        const INITIAL_PRODUCTION = {
+            '2026-05-19': { 1: 60, 2: 20, 3: 25, 4: 10, 5: 30, 6: 20, 7: 30, 8: 20 },
+            '2026-05-20': { 1: 50, 2: 15, 3: 20, 4: 8, 5: 25, 6: 15, 7: 25, 8: 18 },
+            '2026-05-21': { 1: 45, 2: 12, 3: 18, 4: 8, 5: 20, 6: 15, 7: 20, 8: 15 },
+            '2026-05-22': { 1: 55, 2: 13, 3: 22, 5: 18, 6: 12, 7: 22, 8: 20 },
+            '2026-05-23': { 1: 40, 2: 10, 3: 15, 6: 10, 7: 15, 8: 18 },
+            '2026-05-24': { 1: 0, 2: 0 }
+        };
+
+        function ProductionScheduler() {
+            const [products, setProducts] = useState(INITIAL_PRODUCTS);
+            const [production, setProduction] = useState(INITIAL_PRODUCTION);
+            const [editCell, setEditCell] = useState(null);
+            const [editValue, setEditValue] = useState('');
+            const [newProduct, setNewProduct] = useState({ sku: '', name: '', needed: '' });
+            const [showAddProduct, setShowAddProduct] = useState(false);
+
+            const stats = useMemo(() => {
+                const dayTotals = {};
+                const productTotals = {};
+
+                DAYS.forEach(day => {
+                    dayTotals[day.id] = Object.values(production[day.id] || {}).reduce((a, b) => a + parseInt(b || 0), 0);
+                });
+
+                products.forEach(product => {
+                    productTotals[product.id] = DAYS.reduce((sum, day) => sum + (parseInt(production[day.id]?.[product.id] || 0)), 0);
+                });
+
+                return { dayTotals, productTotals };
+            }, [production, products]);
+
+            const handleCellClick = (productId, dayId) => {
+                setEditCell({ productId, dayId });
+                setEditValue(production[dayId]?.[productId] || '0');
+            };
+
+            const handleCellChange = (e) => {
+                const val = e.target.value;
+                if (val === '' || /^\d+$/.test(val)) {
+                    setEditValue(val);
+                }
+            };
+
+            const handleCellBlur = () => {
+                if (editCell) {
+                    const value = parseInt(editValue || 0);
+                    setProduction(prev => ({
+                        ...prev,
+                        [editCell.dayId]: {
+                            ...(prev[editCell.dayId] || {}),
+                            [editCell.productId]: value
+                        }
+                    }));
+                    setEditCell(null);
+                    setEditValue('');
+                }
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') handleCellBlur();
+                if (e.key === 'Escape') setEditCell(null);
+            };
+
+            const handleAddProduct = () => {
+                if (newProduct.name && newProduct.needed) {
+                    const newId = Math.max(...products.map(p => p.id), 0) + 1;
+                    setProducts([...products, {
+                        id: newId,
+                        sku: newProduct.sku || `SKU-${newId}`,
+                        name: newProduct.name,
+                        needed: parseInt(newProduct.needed)
+                    }]);
+                    setNewProduct({ sku: '', name: '', needed: '' });
+                    setShowAddProduct(false);
+                }
+            };
+
+            const handleRemoveProduct = (id) => {
+                setProducts(products.filter(p => p.id !== id));
+            };
+
+            const handleReset = () => {
+                setProduction(INITIAL_PRODUCTION);
+                setProducts(INITIAL_PRODUCTS);
+            };
+
+            const handleExportCSV = () => {
+                let csv = ',';
+                DAYS.forEach(day => {
+                    csv += `${day.label},`;
+                });
+                csv += 'סה"כ\n';
+
+                products.forEach(product => {
+                    csv += `${product.name} (${product.sku}),`;
+                    DAYS.forEach(day => {
+                        csv += `${production[day.id]?.[product.id] || 0},`;
+                    });
+                    csv += `${stats.productTotals[product.id]}\n`;
+                });
+
+                csv += 'סה״כ יומי,';
+                DAYS.forEach(day => {
+                    csv += `${stats.dayTotals[day.id]},`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `production-plan-${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+            };
+
+            return (
+                <div className="max-w-7xl mx-auto">
+                    {/* Header */}
+                    <div className="mb-8">
+                        <div className="flex items-center gap-3 mb-2">
+                            <h1 className="text-4xl font-bold text-slate-800">📦 תוכנית ייצור שבועית</h1>
+                        </div>
+                        <p className="text-slate-600 text-sm">ערוך את כמויות הייצור בכל יום - לחץ על תא לעריכה</p>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex gap-3 mb-8 flex-wrap">
+                        <button
+                            onClick={() => setShowAddProduct(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+                        >
+                            ➕ הוסף מוצר
+                        </button>
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-md"
+                        >
+                            📥 ייצוא CSV
+                        </button>
+                        <button
+                            onClick={handleReset}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition font-medium shadow-md"
+                        >
+                            🔄 איפוס
+                        </button>
+                    </div>
+
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-white p-5 rounded-lg shadow border-r-4 border-blue-500">
+                            <div className="text-slate-600 text-sm font-medium mb-1">סה"כ יחידות בשבוע</div>
+                            <div className="text-3xl font-bold text-blue-600">
+                                {Object.values(stats.dayTotals).reduce((a, b) => a + b, 0).toLocaleString()}
+                            </div>
+                        </div>
+                        <div className="bg-white p-5 rounded-lg shadow border-r-4 border-green-500">
+                            <div className="text-slate-600 text-sm font-medium mb-1">ממוצע יומי</div>
+                            <div className="text-3xl font-bold text-green-600">
+                                {Math.round(Object.values(stats.dayTotals).reduce((a, b) => a + b, 0) / DAYS.length)}
+                            </div>
+                        </div>
+                        <div className="bg-white p-5 rounded-lg shadow border-r-4 border-purple-500">
+                            <div className="text-slate-600 text-sm font-medium mb-1">מוצרים בתוכנית</div>
+                            <div className="text-3xl font-bold text-purple-600">
+                                {products.length}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Table */}
+                    <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-right">
+                                <thead className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                                    <tr>
+                                        <th className="px-6 py-4 text-sm font-bold sticky left-0 bg-slate-800 z-10">מוצר</th>
+                                        {DAYS.map(day => (
+                                            <th key={day.id} className="px-4 py-4 text-sm font-bold text-center min-w-20 border-r border-slate-200">
+                                                <div className="font-bold">{day.label}</div>
+                                                <div className="text-xs opacity-90 mt-1">{day.id.split('-')[2]}.{day.id.split('-')[1]}</div>
+                                            </th>
+                                        ))}
+                                        <th className="px-4 py-4 text-sm font-bold text-center min-w-20 bg-blue-700">סה"כ שבוע</th>
+                                        <th className="px-4 py-4 text-sm font-bold text-center">פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200">
+                                    {products.map((product) => (
+                                        <tr key={product.id} className="hover:bg-blue-50 transition group">
+                                            <td className="px-6 py-4 sticky left-0 bg-white group-hover:bg-blue-50 z-10">
+                                                <div className="font-semibold text-slate-900">{product.name}</div>
+                                                <div className="text-xs text-slate-500 mt-1">#{product.sku}</div>
+                                                <div className="text-xs text-slate-400 mt-1">צריך: {product.needed}</div>
+                                            </td>
+
+                                            {DAYS.map(day => {
+                                                const isEditing = editCell?.productId === product.id && editCell?.dayId === day.id;
+                                                const value = production[day.id]?.[product.id] || 0;
+
+                                                return (
+                                                    <td
+                                                        key={day.id}
+                                                        className="px-4 py-4 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 transition"
+                                                        onClick={() => handleCellClick(product.id, day.id)}
+                                                    >
+                                                        {isEditing ? (
+                                                            <input
+                                                                autoFocus
+                                                                type="number"
+                                                                value={editValue}
+                                                                onChange={handleCellChange}
+                                                                onBlur={handleCellBlur}
+                                                                onKeyDown={handleKeyPress}
+                                                                className="w-full px-2 py-1 bg-blue-100 border-2 border-blue-500 rounded text-center font-bold text-blue-900 outline-none"
+                                                            />
+                                                        ) : (
+                                                            <span className={`text-sm font-bold ${value > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
+                                                                {value || '0'}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })}
+
+                                            <td className="px-4 py-4 text-center bg-blue-100">
+                                                <span className="text-sm font-bold text-blue-900">
+                                                    {stats.productTotals[product.id] || 0}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-4 py-4 text-center">
+                                                <button
+                                                    onClick={() => handleRemoveProduct(product.id)}
+                                                    className="p-2 text-red-500 hover:bg-red-100 rounded transition opacity-0 group-hover:opacity-100"
+                                                    title="הסר מוצר"
+                                                >
+                                                    ❌
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+
+                                    {/* Daily Totals Row */}
+                                    <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white font-bold">
+                                        <td className="px-6 py-4 text-sm">סה"כ יומי</td>
+                                        {DAYS.map(day => (
+                                            <td key={day.id} className="px-4 py-4 text-center border-r border-slate-600">
+                                                <div className="text-lg">{stats.dayTotals[day.id]}</div>
+                                            </td>
+                                        ))}
+                                        <td className="px-4 py-4 text-center bg-blue-700">
+                                            <div className="text-lg">
+                                                {Object.values(stats.dayTotals).reduce((a, b) => a + b, 0)}
+                                            </div>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Add Product Modal */}
+                    {showAddProduct && (
+                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl">
+                                <h2 className="text-xl font-bold text-slate-800 mb-6">הוסף מוצר חדש</h2>
+
+                                <div className="space-y-4 mb-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">קוד SKU</label>
+                                        <input
+                                            type="text"
+                                            placeholder="למשל: 37575"
+                                            value={newProduct.sku}
+                                            onChange={(e) => setNewProduct({...newProduct, sku: e.target.value})}
+                                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">שם מוצר</label>
+                                        <input
+                                            type="text"
+                                            placeholder="למשל: לזניה קלאסית"
+                                            value={newProduct.name}
+                                            onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">כמות צריכה</label>
+                                        <input
+                                            type="number"
+                                            placeholder="0"
+                                            value={newProduct.needed}
+                                            onChange={(e) => setNewProduct({...newProduct, needed: e.target.value})}
+                                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setShowAddProduct(false)}
+                                        className="flex-1 px-4 py-2 text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-100 transition font-medium"
+                                    >
+                                        ביטול
+                                    </button>
+                                    <button
+                                        onClick={handleAddProduct}
+                                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                                    >
+                                        הוסף
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<ProductionScheduler />);
+    </script>
+</body>
+</html>
