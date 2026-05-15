@@ -129,6 +129,75 @@
                 setProducts(INITIAL_PRODUCTS);
             };
 
+            const handleExcelUpload = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    // Load XLSX library
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+
+                    script.onload = () => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const data = new Uint8Array(event.target.result);
+                            const workbook = window.XLSX.read(data, { type: 'array' });
+                            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                            const jsonData = window.XLSX.utils.sheet_to_json(worksheet);
+
+                            // Parse products from Excel
+                            const newProducts = [];
+                            const newProduction = {};
+
+                            DAYS.forEach(day => {
+                                newProduction[day.id] = {};
+                            });
+
+                            jsonData.forEach((row, idx) => {
+                                const name = row['שם מוצר'] || row['Product Name'] || row['Name'] || '';
+                                const sku = row['קוד'] || row['SKU'] || row['Code'] || `SKU-${idx}`;
+
+                                if (name) {
+                                    const productId = idx + 1;
+                                    newProducts.push({
+                                        id: productId,
+                                        sku: String(sku),
+                                        name: name,
+                                        needed: 0
+                                    });
+
+                                    // Load daily production from columns
+                                    DAYS.forEach(day => {
+                                        const dayLabel = day.label;
+                                        const value = row[dayLabel] || row[day.id] || 0;
+                                        if (value) {
+                                            newProduction[day.id][productId] = parseInt(value);
+                                        }
+                                    });
+                                }
+                            });
+
+                            if (newProducts.length > 0) {
+                                setProducts(newProducts);
+                                setProduction(newProduction);
+                                alert(`✅ הועלו ${newProducts.length} מוצרים בהצלחה!`);
+                            } else {
+                                alert('❌ לא נמצאו מוצרים בקובץ');
+                            }
+                        };
+                        reader.readAsArrayBuffer(file);
+                    };
+
+                    document.head.appendChild(script);
+                } catch (err) {
+                    alert('❌ שגיאה בטעינת הקובץ: ' + err.message);
+                }
+
+                // Reset input
+                e.target.value = '';
+            };
+
             const handleExportCSV = () => {
                 let csv = ',';
                 DAYS.forEach(day => {
@@ -168,6 +237,21 @@
 
                     {/* Controls */}
                     <div className="flex gap-3 mb-8 flex-wrap">
+                        <div>
+                            <input
+                                type="file"
+                                id="excelInput"
+                                accept=".xlsx,.xls,.csv"
+                                onChange={handleExcelUpload}
+                                className="hidden"
+                            />
+                            <button
+                                onClick={() => document.getElementById('excelInput').click()}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium shadow-md"
+                            >
+                                📊 העלה אקסל
+                            </button>
+                        </div>
                         <button
                             onClick={() => setShowAddProduct(true)}
                             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
