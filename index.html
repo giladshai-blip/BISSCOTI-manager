@@ -415,7 +415,34 @@
 
     <!-- Hours panel -->
     <div id="emp-panel-hours" class="hidden">
-      <h2 class="text-xl font-black text-gray-800 mb-5">שעות תקן</h2>
+      <h2 class="text-xl font-black text-gray-800 mb-4">שעות תקן</h2>
+
+      <!-- הזנה ידנית -->
+      <div class="card mb-5 border-green-200 bg-green-50">
+        <div class="text-xs font-black text-green-700 uppercase tracking-wider mb-3">הוסף דיווח</div>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div>
+            <label class="block text-[10px] font-black text-gray-500 mb-1">תאריך</label>
+            <input type="date" id="new-hours-date"
+              class="w-full border border-gray-200 rounded-xl px-2 py-2 text-sm font-bold bg-white outline-none focus:border-green-400">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-gray-500 mb-1">שעות עבודה</label>
+            <input type="number" id="new-hours-val" placeholder="0" min="0" step="0.5"
+              class="w-full border border-gray-200 rounded-xl px-2 py-2 text-sm font-bold bg-white outline-none focus:border-green-400">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-gray-500 mb-1">מכירות (₪)</label>
+            <input type="number" id="new-hours-sales" placeholder="0" min="0"
+              class="w-full border border-gray-200 rounded-xl px-2 py-2 text-sm font-bold bg-white outline-none focus:border-green-400">
+          </div>
+        </div>
+        <button onclick="saveHours()"
+          class="w-full bg-green-600 text-white py-2.5 rounded-xl font-black text-sm flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus"></i> שמור דיווח
+        </button>
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div class="space-y-4">
           <div class="card bg-indigo-900 text-white border-none">
@@ -1025,6 +1052,30 @@ async function deleteNote(idx) {
 
 // ── Hours ────────────────────────────────────────────────────────
 
+async function saveHours() {
+  const dateEl  = document.getElementById('new-hours-date');
+  const hoursEl = document.getElementById('new-hours-val');
+  const salesEl = document.getElementById('new-hours-sales');
+  const date  = dateEl.value;
+  const hours = parseFloat(hoursEl.value);
+  const sales = parseFloat(salesEl.value) || 0;
+  if (!date || isNaN(hours) || hours <= 0) { showToast('נא למלא תאריך ושעות', '#f59e0b'); return; }
+  const btn = document.querySelector('#emp-panel-hours button[onclick="saveHours()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'שומר...'; }
+  try {
+    await api('saveStandardHours', { date, hours, sales });
+    const existing = state.hours.find(h => h.date === date);
+    if (existing) { existing.hours = hours; existing.sales = sales; }
+    else           { state.hours.push({ date, hours, sales }); }
+    hoursEl.value = ''; salesEl.value = '';
+    renderHoursHistory(); updateShiftCalc(); renderDashboard();
+    showToast('הדיווח נשמר', '#16a34a');
+  } catch(e) { showToast('שגיאה בשמירה', '#dc2626'); }
+  finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plus"></i> שמור דיווח'; }
+  }
+}
+
 function renderHoursHistory() {
   const b = document.getElementById('hours-table-body'); if (!b) return;
   b.innerHTML = '';
@@ -1333,8 +1384,11 @@ function sendTasks(type) {
 // ── Init ─────────────────────────────────────────────────────────
 
 window.onload = () => {
+  const today = new Date().toISOString().split('T')[0];
   const dateEl = document.getElementById('display-date');
   if (dateEl) dateEl.textContent = new Date().toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const newHoursDate = document.getElementById('new-hours-date');
+  if (newHoursDate) newHoursDate.value = today;
 
   // CRM swipe-down to close
   const modal = document.getElementById('crm-modal');

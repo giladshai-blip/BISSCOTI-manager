@@ -23,6 +23,7 @@ function doGet(e) {
         case 'resetAllTasksPersonal': result = resetAllTasksPersonal();            break;
         case 'saveNoteToEmployee': result = saveNoteToEmployee(payload); break;
         case 'deleteNoteFromEmployee': result = deleteNoteFromEmployee(payload); break;
+        case 'saveStandardHours':  result = saveStandardHours(payload);    break;
         case 'syncFromYerakot':    result = syncFromYerakot();             break;
         case 'debugSync':          result = debugSync();                   break;
         default: result = { status: 'error', message: 'Action not found: ' + action };
@@ -183,6 +184,32 @@ function deleteNoteFromEmployee(payload) {
     }
   }
   return { status: 'not_found' };
+}
+
+// ─── Standard Hours ───────────────────────────────────────────────────────────
+
+function saveStandardHours(payload) {
+  const { date, hours, sales } = payload;
+  const sheet = getOrCreateSheet(SpreadsheetApp.openById(BISCOTTI_SHEET_ID), 'שעות תקן');
+  const data  = sheet.getDataRange().getValues();
+  const tz    = SpreadsheetApp.openById(BISCOTTI_SHEET_ID).getSpreadsheetTimeZone();
+
+  // חיפוש שורה קיימת לאותו תאריך
+  let foundRow = -1;
+  for (let i = 1; i < data.length; i++) {
+    const rowDate = data[i][0] instanceof Date
+      ? Utilities.formatDate(data[i][0], tz, 'yyyy-MM-dd')
+      : String(data[i][0]).trim();
+    if (rowDate === date) { foundRow = i + 1; break; }
+  }
+
+  const dateObj = new Date(date + 'T12:00:00');
+  if (foundRow > -1) {
+    sheet.getRange(foundRow, 1, 1, 3).setValues([[dateObj, sales, hours]]);
+  } else {
+    sheet.appendRow([dateObj, sales, hours]);
+  }
+  return { status: 'success' };
 }
 
 // ─── Inventory ────────────────────────────────────────────────────────────────
