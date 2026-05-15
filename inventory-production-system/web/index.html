@@ -501,18 +501,30 @@
         // Handle file upload
         function handleFileUpload(event) {
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file) {
+                alert('❌ בחר קובץ');
+                return;
+            }
+
+            console.log('📁 קובץ נבחר:', file.name, file.size, 'bytes');
+            document.getElementById('uploadInfo').textContent = `⏳ טוען ${file.name}...`;
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const content = e.target.result;
-                parseAndLoadData(content);
-                document.getElementById('uploadInfo').textContent = `✅ טוען: ${file.name}`;
+                try {
+                    const content = e.target.result;
+                    console.log('📄 תוכן קובץ (100 תווים ראשונים):', content.substring(0, 100));
+                    parseAndLoadData(content);
+                } catch (err) {
+                    console.error('❌ שגיאה בעיבוד:', err);
+                    alert(`❌ שגיאה: ${err.message}`);
+                }
             };
-            reader.onerror = function() {
+            reader.onerror = function(err) {
+                console.error('❌ שגיאה בקריאה:', err);
                 alert('❌ שגיאה בקריאת הקובץ');
             };
-            reader.readAsText(file);
+            reader.readAsText(file, 'utf-8');
         }
 
         // Parse CSV/TXT data
