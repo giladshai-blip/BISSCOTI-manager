@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תוכנית ייצור שבועית</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            direction: rtl;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 4px solid #34A853;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #34A853;
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .subheader {
+            color: #999;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .date-info {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #999;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .controls {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .control-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .production-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        .production-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        .production-table thead {
+            background: linear-gradient(135deg, #34A853 0%, #2d8e47 100%);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .production-table th {
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        .production-table td {
+            padding: 15px 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+            height: 50px;
+        }
+
+        .production-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .production-table tbody tr:hover {
+            background-color: #e8f5e9;
+            transition: background-color 0.3s;
+        }
+
+        .product-name {
+            text-align: right;
+            font-weight: 700;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .product-needed {
+            color: #999;
+            font-size: 12px;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .quantity-input {
+            width: 90px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .quantity-input:focus {
+            outline: none;
+            border-color: #34A853;
+            box-shadow: 0 0 8px rgba(52, 168, 83, 0.3);
+            background-color: #f0f8f5;
+        }
+
+        .quantity-input:hover {
+            border-color: #34A853;
+        }
+
+        .total-cell {
+            background-color: #e8f5e9;
+            font-weight: 700;
+            color: #34A853;
+            font-size: 16px;
+            border: 2px solid #34A853;
+        }
+
+        .summary {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f5 100%);
+            border-radius: 8px;
+            border-right: 5px solid #34A853;
+        }
+
+        .summary h3 {
+            color: #34A853;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-item {
+            padding: 15px;
+            background-color: white;
+            border-radius: 6px;
+            border-right: 4px solid #34A853;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .summary-item label {
+            display: block;
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .summary-item .value {
+            display: block;
+            color: #34A853;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #34A853 0%, #2d8e47 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(52, 168, 83, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(52, 168, 83, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #4285F4 0%, #2c63c4 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(66, 133, 244, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ea4335 0%, #d33425 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(234, 67, 53, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(234, 67, 53, 0.4);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #fbbc04 0%, #f9ab00 100%);
+            color: #333;
+            box-shadow: 0 4px 12px rgba(251, 188, 4, 0.3);
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(251, 188, 4, 0.4);
+        }
+
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            .controls, .buttons {
+                display: none;
+            }
+
+            .quantity-input {
+                border: 1px solid #ccc;
+                background-color: white;
+            }
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+
+        .demo-badge {
+            display: inline-block;
+            background-color: #fbbc04;
+            color: #333;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="demo-badge">🎨 דוגמה אינטראקטיבית</div>
+
+        <div class="header">
+            <h1>📊 תוכנית ייצור שבועית</h1>
+            <p>מערכת לניהול תכנית ייצור על בסיס מלאי יומי</p>
+            <p class="subheader">✨ אתה יכול לשבוץ כמויות בכל יום ולראות את הסיכום בזמן אמת</p>
+        </div>
+
+        <div class="date-info">
+            <p>📅 עדכון: <strong id="updateDate"></strong></p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>🔍 הוסף מוצר:</label>
+                <input type="text" id="newProductName" placeholder="שם מוצר">
+                <input type="number" id="newProductNeeded" placeholder="כמות צריכה" min="0">
+                <button class="btn-secondary" onclick="addProduct()">➕ הוסף</button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="production-table">
+                <thead>
+                    <tr>
+                        <th>מוצר</th>
+                        <th>ראשון</th>
+                        <th>שני</th>
+                        <th>שלישי</th>
+                        <th>רביעי</th>
+                        <th>חמישי</th>
+                        <th>שישי</th>
+                        <th>סה״כ שבוע</th>
+                    </tr>
+                </thead>
+                <tbody id="productionBody">
+                    <!-- Will be filled by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="summary">
+            <h3>📈 סיכום שבועי</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <label>סה״כ יחידות לייצור</label>
+                    <div class="value" id="totalUnits">0</div>
+                </div>
+                <div class="summary-item">
+                    <label>מוצרים בתוכנית</label>
+                    <div class="value" id="totalProducts">0</div>
+                </div>
+                <div class="summary-item">
+                    <label>ממוצע יומי</label>
+                    <div class="value" id="averageDaily">0</div>
+                </div>
+                <div class="summary-item">
+                    <label>יום פעיל ביותר</label>
+                    <div class="value" id="maxDay">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-print" onclick="window.print()">🖨️ הדפס</button>
+            <button class="btn-secondary" onclick="exportToCSV()">📥 ייצוא CSV</button>
+            <button class="btn-danger" onclick="resetForm()">🔄 אפס</button>
+        </div>
+
+        <div class="footer">
+            <p>💡 <strong>טיפ:</strong> זו דוגמה אינטראקטיבית - ב-Google Sheets תוכל להייבא דוח מלאי ממשי</p>
+            <p>🔗 למידע נוסף: ראה את INSTRUCTIONS.md בפרוייקט</p>
+        </div>
+    </div>
+
+    <script>
+        // Set current date
+        document.getElementById('updateDate').textContent = new Date().toLocaleDateString('he-IL', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // Sample data
+        let products = [
+            { id: 1, name: 'מוצר A', needed: 250 },
+            { id: 2, name: 'מוצר B', needed: 320 },
+            { id: 3, name: 'מוצר C', needed: 220 },
+            { id: 4, name: 'מוצר D', needed: 150 }
+        ];
+
+        const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
+
+        function initializeTable() {
+            const tbody = document.getElementById('productionBody');
+            tbody.innerHTML = '';
+
+            products.forEach((product) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="product-name">
+                        ${product.name}
+                        <span class="product-needed">צריך: ${product.needed}</span>
+                    </td>
+                    ${days.map((_, dayIndex) => `
+                        <td>
+                            <input type="number" class="quantity-input"
+                                   data-product="${product.id}"
+                                   data-day="${dayIndex}"
+                                   min="0"
+                                   onchange="updateTotals()">
+                        </td>
+                    `).join('')}
+                    <td class="total-cell" id="total-${product.id}">0</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateTotals() {
+            let grandTotal = 0;
+            let filledProducts = 0;
+            let dayTotals = new Array(6).fill(0);
+
+            products.forEach((product) => {
+                let productTotal = 0;
+                days.forEach((_, dayIndex) => {
+                    const input = document.querySelector(
+                        `input[data-product="${product.id}"][data-day="${dayIndex}"]`
+                    );
+                    if (input && input.value) {
+                        const value = parseInt(input.value) || 0;
+                        productTotal += value;
+                        dayTotals[dayIndex] += value;
+                    }
+                });
+
+                document.getElementById(`total-${product.id}`).textContent = productTotal;
+                if (productTotal > 0) filledProducts++;
+                grandTotal += productTotal;
+            });
+
+            // Update summary
+            document.getElementById('totalUnits').textContent = grandTotal;
+            document.getElementById('totalProducts').textContent = filledProducts;
+            document.getElementById('averageDaily').textContent =
+                grandTotal > 0 ? Math.round(grandTotal / 6) : 0;
+
+            // Find max day
+            const maxDayIndex = dayTotals.indexOf(Math.max(...dayTotals));
+            document.getElementById('maxDay').textContent = dayTotals[maxDayIndex] > 0 ? days[maxDayIndex] : '-';
+        }
+
+        function addProduct() {
+            const name = document.getElementById('newProductName').value.trim();
+            const needed = parseInt(document.getElementById('newProductNeeded').value) || 0;
+
+            if (!name) {
+                alert('הכנס שם מוצר');
+                return;
+            }
+
+            const id = Math.max(...products.map(p => p.id), 0) + 1;
+            products.push({ id, name, needed });
+
+            document.getElementById('newProductName').value = '';
+            document.getElementById('newProductNeeded').value = '';
+
+            initializeTable();
+            updateTotals();
+        }
+
+        function resetForm() {
+            if (confirm('האם אתה בטוח שרוצה לאפס את כל הנתונים?')) {
+                document.querySelectorAll('.quantity-input').forEach(input => {
+                    input.value = '';
+                });
+                updateTotals();
+            }
+        }
+
+        function exportToCSV() {
+            let csv = 'מוצר,ראשון,שני,שלישי,רביעי,חמישי,שישי,סה"כ\n';
+
+            products.forEach((product) => {
+                let row = product.name;
+                let total = 0;
+
+                days.forEach((_, dayIndex) => {
+                    const input = document.querySelector(
+                        `input[data-product="${product.id}"][data-day="${dayIndex}"]`
+                    );
+                    const value = (input && input.value) ? input.value : '0';
+                    row += ',' + value;
+                    total += parseInt(value) || 0;
+                });
+
+                row += ',' + total + '\n';
+                csv += row;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `production-plan-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            initializeTable();
+            updateTotals();
+        });
+    </script>
+</body>
+</html>
