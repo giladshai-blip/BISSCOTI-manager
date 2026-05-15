@@ -146,7 +146,10 @@
                             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                             const jsonData = window.XLSX.utils.sheet_to_json(worksheet);
 
-                            // Parse products from Excel
+                            console.log('עמודות בקובץ:', Object.keys(jsonData[0] || {}));
+                            console.log('נתונים לדוגמה:', jsonData[0]);
+
+                            // Parse products from Excel - יותר גמיש
                             const newProducts = [];
                             const newProduction = {};
 
@@ -155,14 +158,31 @@
                             });
 
                             jsonData.forEach((row, idx) => {
-                                const name = row['שם מוצר'] || row['Product Name'] || row['Name'] || '';
-                                const sku = row['קוד'] || row['SKU'] || row['Code'] || `SKU-${idx}`;
+                                // חפש עמודת שם בכמה שמות אפשריים
+                                let name = '';
+                                const possibleNameColumns = ['שם מוצר', 'Product Name', 'Name', 'product', 'name', 'תאור', 'Description'];
+                                for (let col of possibleNameColumns) {
+                                    if (row[col]) {
+                                        name = String(row[col]).trim();
+                                        break;
+                                    }
+                                }
+
+                                // חפש עמודת קוד
+                                let sku = '';
+                                const possibleSkuColumns = ['קוד', 'SKU', 'Code', 'code', 'מק\'ט', 'ID'];
+                                for (let col of possibleSkuColumns) {
+                                    if (row[col]) {
+                                        sku = String(row[col]).trim();
+                                        break;
+                                    }
+                                }
 
                                 if (name) {
                                     const productId = idx + 1;
                                     newProducts.push({
                                         id: productId,
-                                        sku: String(sku),
+                                        sku: sku || `SKU-${idx}`,
                                         name: name,
                                         needed: 0
                                     });
@@ -171,19 +191,22 @@
                                     DAYS.forEach(day => {
                                         const dayLabel = day.label;
                                         const value = row[dayLabel] || row[day.id] || 0;
-                                        if (value) {
+                                        if (value && !isNaN(parseInt(value))) {
                                             newProduction[day.id][productId] = parseInt(value);
                                         }
                                     });
                                 }
                             });
 
+                            console.log('מוצרים שנמצאו:', newProducts.length);
+
                             if (newProducts.length > 0) {
                                 setProducts(newProducts);
                                 setProduction(newProduction);
                                 alert(`✅ הועלו ${newProducts.length} מוצרים בהצלחה!`);
                             } else {
-                                alert('❌ לא נמצאו מוצרים בקובץ');
+                                const cols = Object.keys(jsonData[0] || {}).join(', ');
+                                alert(`❌ לא נמצאו מוצרים\n\nעמודות בקובץ:\n${cols}\n\nבדוק את שמות העמודות בקובץ`);
                             }
                         };
                         reader.readAsArrayBuffer(file);
