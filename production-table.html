@@ -160,7 +160,16 @@
                             jsonData.forEach((row, idx) => {
                                 // חפש עמודת שם בכמה שמות אפשריים
                                 let name = '';
-                                const possibleNameColumns = ['שם מוצר', 'Product Name', 'Name', 'product', 'name', 'תאור', 'Description'];
+                                const possibleNameColumns = [
+                                    'שם מוצר',
+                                    'תאור מוצר',      // WMS system columns
+                                    'Product Name',
+                                    'Name',
+                                    'product',
+                                    'name',
+                                    'תאור',
+                                    'Description'
+                                ];
                                 for (let col of possibleNameColumns) {
                                     if (row[col]) {
                                         name = String(row[col]).trim();
