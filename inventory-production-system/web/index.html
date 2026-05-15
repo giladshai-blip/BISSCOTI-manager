@@ -92,6 +92,41 @@
             font-size: 14px;
         }
 
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 10px 18px;
+            background: linear-gradient(135deg, #4285F4 0%, #2c63c4 100%);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
+        }
+
+        .upload-info {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
         .production-table {
             width: 100%;
             border-collapse: collapse;
@@ -370,10 +405,20 @@
 
         <div class="controls">
             <div class="control-group">
-                <label>🔍 הוסף מוצר:</label>
-                <input type="text" id="newProductName" placeholder="שם מוצר">
-                <input type="number" id="newProductNeeded" placeholder="כמות צריכה" min="0">
-                <button class="btn-secondary" onclick="addProduct()">➕ הוסף</button>
+                <label>📥 העלה דוח מלאי:</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="fileInput" accept=".csv,.txt,.xlsx" onchange="handleFileUpload(event)">
+                    <label for="fileInput" class="file-input-label">📤 בחר קובץ</label>
+                </div>
+                <div class="upload-info" id="uploadInfo"></div>
+            </div>
+            <div style="border-left: 2px solid #ddd; padding-left: 20px; margin-left: 20px;">
+                <div class="control-group">
+                    <label>🔍 הוסף מוצר:</label>
+                    <input type="text" id="newProductName" placeholder="שם מוצר">
+                    <input type="number" id="newProductNeeded" placeholder="כמות צריכה" min="0">
+                    <button class="btn-secondary" onclick="addProduct()">➕ הוסף</button>
+                </div>
             </div>
         </div>
 
@@ -447,6 +492,64 @@
             { id: 3, name: 'מוצר C', needed: 220 },
             { id: 4, name: 'מוצר D', needed: 150 }
         ];
+
+        // Handle file upload
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                parseAndLoadData(content);
+                document.getElementById('uploadInfo').textContent = `✅ טוען: ${file.name}`;
+            };
+            reader.onerror = function() {
+                alert('❌ שגיאה בקריאת הקובץ');
+            };
+            reader.readAsText(file);
+        }
+
+        // Parse CSV/TXT data
+        function parseAndLoadData(content) {
+            const lines = content.trim().split('\n');
+            if (lines.length < 2) {
+                alert('❌ הקובץ ריק או לא תקין');
+                return;
+            }
+
+            products = [];
+            let id = 1;
+
+            // Skip header row and parse data
+            for (let i = 1; i < lines.length; i++) {
+                const cells = lines[i].split(/,|\t/).map(c => c.trim());
+                if (cells.length < 5) continue; // Skip invalid rows
+
+                const name = cells[1] || `מוצר ${id}`;
+                const current = parseInt(cells[2]) || 0;
+                const min = parseInt(cells[3]) || 0;
+                const max = parseInt(cells[4]) || 0;
+                const needed = Math.max(0, max - current);
+
+                if (needed > 0) {
+                    products.push({
+                        id: id++,
+                        name: name,
+                        needed: needed
+                    });
+                }
+            }
+
+            if (products.length === 0) {
+                alert('⚠️ לא נמצאו מוצרים שצריכים ייצור');
+                return;
+            }
+
+            initializeTable();
+            updateTotals();
+            document.getElementById('uploadInfo').textContent = `✅ טוען ${products.length} מוצרים`;
+        }
 
         const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
 
