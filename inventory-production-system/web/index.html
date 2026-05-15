@@ -466,7 +466,8 @@
 
         <div class="buttons">
             <button class="btn-print" onclick="window.print()">🖨️ הדפס</button>
-            <button class="btn-secondary" onclick="exportToCSV()">📥 ייצוא CSV</button>
+            <button class="btn-secondary" onclick="exportToCSV()">📥 ייצוא תוכנית</button>
+            <button class="btn-secondary" onclick="exportRawData()" style="background: linear-gradient(135deg, #ea4335 0%, #fbbc04 100%);">📊 ייצוא נתונים</button>
             <button class="btn-danger" onclick="resetForm()">🔄 אפס</button>
         </div>
 
@@ -493,6 +494,10 @@
             { id: 4, name: 'מוצר D', needed: 150 }
         ];
 
+        // Store all raw data from file for future analysis
+        let rawData = [];
+        let fileHeaders = [];
+
         // Handle file upload
         function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -518,37 +523,69 @@
                 return;
             }
 
+            // Parse headers
+            fileHeaders = lines[0].split(/,|\t/).map(c => c.trim());
+            rawData = [];
             products = [];
             let id = 1;
+
+            console.log('📋 עמודות זוהו:', fileHeaders);
 
             // Skip header row and parse data
             for (let i = 1; i < lines.length; i++) {
                 const cells = lines[i].split(/,|\t/).map(c => c.trim());
-                if (cells.length < 5) continue; // Skip invalid rows
+                if (cells.length < 2 || !cells[0]) continue;
 
-                const name = cells[1] || `מוצר ${id}`;
-                const current = parseInt(cells[2]) || 0;
-                const min = parseInt(cells[3]) || 0;
-                const max = parseInt(cells[4]) || 0;
+                // Store all raw data for future analysis
+                let rowData = {};
+                fileHeaders.forEach((header, idx) => {
+                    rowData[header] = cells[idx] || '';
+                });
+                rawData.push(rowData);
+
+                // Auto-detect columns (try common patterns)
+                const nameCol = findColumn(['שם מוצר', 'Product Name', 'Name', 'שם', 'name']);
+                const currentCol = findColumn(['מלאי קיים', 'Current Stock', 'Stock', 'מלאי', 'current']);
+                const minCol = findColumn(['מינימום', 'Min Stock', 'Minimum', 'min']);
+                const maxCol = findColumn(['מקסימום', 'Max Stock', 'Maximum', 'max']);
+
+                const name = nameCol >= 0 ? cells[nameCol] : cells[0];
+                const current = currentCol >= 0 ? (parseInt(cells[currentCol]) || 0) : 0;
+                const max = maxCol >= 0 ? (parseInt(cells[maxCol]) || 0) : 0;
                 const needed = Math.max(0, max - current);
 
                 if (needed > 0) {
                     products.push({
                         id: id++,
                         name: name,
-                        needed: needed
+                        needed: needed,
+                        rawData: rowData
                     });
                 }
             }
 
             if (products.length === 0) {
                 alert('⚠️ לא נמצאו מוצרים שצריכים ייצור');
+                console.log('📊 כל הנתונים שנטענו:', rawData);
                 return;
             }
 
             initializeTable();
             updateTotals();
-            document.getElementById('uploadInfo').textContent = `✅ טוען ${products.length} מוצרים`;
+            document.getElementById('uploadInfo').textContent = `✅ טוען ${products.length} מוצרים | ${fileHeaders.length} עמודות`;
+            console.log('💾 נתונים גולמיים שמורים:', rawData);
+        }
+
+        // Helper: find column index by possible names
+        function findColumn(possibleNames) {
+            for (let name of possibleNames) {
+                const idx = fileHeaders.findIndex(h =>
+                    h.toLowerCase().includes(name.toLowerCase()) ||
+                    name.toLowerCase().includes(h.toLowerCase())
+                );
+                if (idx >= 0) return idx;
+            }
+            return -1;
         }
 
         const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -665,6 +702,30 @@
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `production-plan-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // Export all raw data for analysis
+        function exportRawData() {
+            if (rawData.length === 0) {
+                alert('❌ אין נתונים לייצוא');
+                return;
+            }
+
+            let csv = fileHeaders.join(',') + '\n';
+            rawData.forEach(row => {
+                const values = fileHeaders.map(h => {
+                    const val = row[h] || '';
+                    // Escape quotes in CSV
+                    return typeof val === 'string' && val.includes(',') ? `"${val}"` : val;
+                });
+                csv += values.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `inventory-analysis-${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
         }
 
