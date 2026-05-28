@@ -1410,8 +1410,10 @@ function sendTasks(type) {
   const dateStr = picked.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
   const list = type === 'david' ? state.tasks : state.tasksPersonal;
   const title = type === 'david' ? 'משימות יומיות' : 'משימות אישיות';
+  const checked = list.filter(t => t.checked);
+  if (!checked.length) return showToast('אין משימות מסומנות', '#f59e0b');
   let text = `*${title}*\nתאריך: ${dateStr} | ${timeStr}\n\n`;
-  list.forEach(t => text += `${t.name}: ${t.done > 0 ? t.done : '0'}\n\n`);
+  checked.forEach(t => text += `✅ ${t.name}\n\n`);
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 }
 
