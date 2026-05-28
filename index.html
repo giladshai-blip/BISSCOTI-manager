@@ -1287,8 +1287,10 @@ function updateOrderAmount(id, val) {
 function sendOrderToEliyahu() {
   const toSend = orders.filter(o => Number(o.amountToOrder) > 0);
   if (!toSend.length) return showToast('לא הוזנו כמויות', '#dc2626');
-  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-  const date = tomorrow.toLocaleDateString('he-IL');
+  const today = new Date();
+  const daysAhead = today.getDay() === 4 ? 3 : 1; // יום ה' → ראשון (+3), אחרת מחר (+1)
+  const delivery = new Date(today); delivery.setDate(today.getDate() + daysAhead);
+  const date = delivery.toLocaleDateString('he-IL');
   let text = `*הזמנת ירקות מחלקת קישים*\nתאריך: ${date}\n\n`;
   toSend.forEach(o => text += `${o.id}: ${o.amountToOrder}\n\n`);
   window.open(`https://wa.me/972524048099?text=${encodeURIComponent(text)}`, '_blank');
