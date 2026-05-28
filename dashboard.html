@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>גלעד WMS - ניהול מחסן</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        [dir=rtl] { direction: rtl; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+        const { useState, useMemo } = React;
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [manualShipments, setManualShipments] = useState({
+                "37575": 146, "12933": 225, "12934": 100, "36028": 60,
+                "37551": 30, "37125": 60, "12913": 55, "36128": 43, "36300": 640
+            });
+
+            const INITIAL_DATA = [
+                { sku: "37575", name: "לזניה קלאסית בינונית", stock: 74, orders: 216, category: "לזניות" },
+                { sku: "12933", name: "ספנקופיטה אישי", stock: 5, orders: 70, category: "מאפים" },
+                { sku: "12934", name: "ספנקופיטה", stock: 58, orders: 112, category: "מאפים" },
+                { sku: "36028", name: "קיש פטריות בינוני טבעוני ללא קמח", stock: 7, orders: 38, category: "קישים" },
+                { sku: "37551", name: "לזניה חצילים פארמה בינוני", stock: 92, orders: 108, category: "לזניות" },
+                { sku: "37125", name: "פשטידה עגולה פטריות ללא קמח בינונית", stock: 55, orders: 72, category: "פשטידות" },
+                { sku: "36300", name: "קיש בצל אישי", stock: 640, orders: 240, category: "קישים" },
+                { sku: "36400", name: "קיש ברוקולי אישי", stock: 1024, orders: 264, category: "קישים" },
+            ];
+
+            const processedData = useMemo(() => {
+                return INITIAL_DATA.map(item => {
+                    const manual = manualShipments[item.sku] || 0;
+                    const realBalance = (item.stock || 0) - (item.orders || 0);
+                    const forecastBalance = (item.stock || 0) + manual - (item.orders || 0);
+                    return { ...item, manual, realBalance, forecastBalance };
+                });
+            }, []);
+
+            const stats = useMemo(() => {
+                return {
+                    realShortageCount: processedData.filter(i => i.realBalance < 0).length,
+                    realTotalMissingUnits: processedData.reduce((acc, i) => acc + (i.realBalance < 0 ? Math.abs(i.realBalance) : 0), 0),
+                    totalShippedToday: Object.values(manualShipments).reduce((a, v) => a + v, 0)
+                };
+            }, [processedData, manualShipments]);
+
+            const filteredData = processedData.filter(item => {
+                const matchesSearch = item.name.includes(searchTerm) || item.sku.includes(searchTerm);
+                return matchesSearch;
+            });
+
+            return React.createElement('div', { className: 'min-h-screen bg-gray-100 text-right flex text-gray-800', dir: 'rtl' },
+                // Sidebar
+                React.createElement('aside', { className: 'w-64 bg-white border-r border-gray-200 p-6' },
+                    React.createElement('div', { className: 'flex items-center gap-3 mb-8' },
+                        React.createElement('div', { className: 'bg-blue-500 text-white p-2 rounded-lg text-2xl' }, '📦'),
+                        React.createElement('span', { className: 'text-xl font-bold text-gray-700' }, 'גלעד WMS')
+                    ),
+                    React.createElement('nav', { className: 'space-y-2' },
+                        ['dashboard', 'production', 'shortages'].map(tab =>
+                            React.createElement('button', {
+                                key: tab,
+                                onClick: () => setActiveTab(tab),
+                                className: `w-full text-right px-4 py-3 rounded-lg transition ${activeTab === tab ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-gray-100'}`
+                            },
+                            tab === 'dashboard' ? '📊 מרכז בקרה' : tab === 'production' ? '🏭 תוכנית ייצור' : '⚠️ חוסרים נטו'
+                            )
+                        )
+                    )
+                ),
+
+                // Main
+                React.createElement('main', { className: 'flex-1 p-10' },
+                    React.createElement('header', { className: 'mb-10' },
+                        React.createElement('h1', { className: 'text-3xl font-bold text-gray-800 mb-4' },
+                            activeTab === 'dashboard' ? '📊 מרכז בקרה' : activeTab === 'production' ? '🏭 תוכנית ייצור' : '⚠️ חוסרים במחסן'
+                        ),
+                        React.createElement('div', { className: 'relative w-80' },
+                            React.createElement('input', {
+                                type: 'text',
+                                placeholder: 'חפש מוצרים...',
+                                className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                value: searchTerm,
+                                onChange: (e) => setSearchTerm(e.target.value)
+                            })
+                        )
+                    ),
+
+                    // Stats
+                    React.createElement('div', { className: 'grid grid-cols-4 gap-6 mb-10' },
+                        [
+                            { label: '❌ חוסר נטו', val: stats.realTotalMissingUnits },
+                            { label: '✅ נשלח היום', val: stats.totalShippedToday },
+                            { label: '🏭 סה"כ בייצור', val: 0 },
+                            { label: '📦 מוצרים בחוסר', val: stats.realShortageCount }
+                        ].map((stat, i) =>
+                            React.createElement('div', { key: i, className: 'bg-white p-6 rounded-lg shadow border border-gray-200' },
+                                React.createElement('div', { className: 'text-gray-600 text-sm font-semibold mb-2' }, stat.label),
+                                React.createElement('h3', { className: 'text-4xl font-bold text-gray-800' }, stat.val.toLocaleString())
+                            )
+                        )
+                    ),
+
+                    // Table
+                    React.createElement('div', { className: 'bg-white rounded-lg shadow overflow-hidden' },
+                        React.createElement('table', { className: 'w-full text-right border-collapse' },
+                            React.createElement('thead', { className: 'bg-gray-100 border-b border-gray-200' },
+                                React.createElement('tr', null,
+                                    React.createElement('th', { className: 'px-6 py-4 text-left font-semibold text-gray-700' }, 'מוצר'),
+                                    React.createElement('th', { className: 'px-4 py-4 text-center font-semibold text-gray-700' }, 'מלאי'),
+                                    React.createElement('th', { className: 'px-4 py-4 text-center font-semibold text-green-700' }, 'נשלח'),
+                                    React.createElement('th', { className: 'px-4 py-4 text-center font-semibold text-red-700' }, 'חוסר'),
+                                    React.createElement('th', { className: 'px-4 py-4 text-center font-semibold text-gray-700' }, 'יתרה צפויה')
+                                )
+                            ),
+                            React.createElement('tbody', { className: 'divide-y divide-gray-200' },
+                                filteredData.map(item =>
+                                    React.createElement('tr', { key: item.sku, className: 'hover:bg-gray-50' },
+                                        React.createElement('td', { className: 'px-6 py-4' },
+                                            React.createElement('div', { className: 'font-medium text-gray-800' }, item.name),
+                                            React.createElement('div', { className: 'text-sm text-gray-500' }, '# ' + item.sku)
+                                        ),
+                                        React.createElement('td', { className: 'px-4 py-4 text-center text-gray-700' }, item.stock),
+                                        React.createElement('td', { className: 'px-4 py-4 text-center text-green-700 font-semibold' }, item.manual > 0 ? '+' + item.manual : '-'),
+                                        React.createElement('td', { className: 'px-4 py-4 text-center font-semibold ' + (item.realBalance < 0 ? 'text-red-700' : 'text-gray-700') },
+                                            item.realBalance < 0 ? item.realBalance : '0'
+                                        ),
+                                        React.createElement('td', { className: 'px-4 py-4 text-center' },
+                                            React.createElement('span', { className: 'px-3 py-1 rounded-full text-sm font-semibold ' + (item.forecastBalance < 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700') },
+                                                item.forecastBalance > 0 ? '+' + item.forecastBalance : item.forecastBalance
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+        }
+
+        ReactDOM.render(React.createElement(App), document.getElementById('root'));
+    </script>
+</body>
+</html>
