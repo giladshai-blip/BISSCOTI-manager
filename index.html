@@ -592,6 +592,13 @@
         </div>
       </header>
       <div id="tasks-grid-david" class="grid grid-cols-1 gap-3"></div>
+      <div class="flex gap-2 mt-4">
+        <input type="text" id="new-task-david" placeholder="הוסף משימה..." onkeydown="if(event.key==='Enter')addTask('david')"
+          class="flex-grow border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold bg-white outline-none focus:border-green-400">
+        <button onclick="addTask('david')" class="bg-green-600 text-white px-4 py-2.5 rounded-xl font-black text-sm flex-shrink-0">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
     </div>
 
     <!-- משימות אישיות -->
@@ -607,6 +614,13 @@
         </div>
       </header>
       <div id="tasks-grid-personal" class="grid grid-cols-1 gap-3"></div>
+      <div class="flex gap-2 mt-4">
+        <input type="text" id="new-task-personal" placeholder="הוסף משימה..." onkeydown="if(event.key==='Enter')addTask('personal')"
+          class="flex-grow border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold bg-white outline-none focus:border-green-400">
+        <button onclick="addTask('personal')" class="bg-green-600 text-white px-4 py-2.5 rounded-xl font-black text-sm flex-shrink-0">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1339,11 +1353,25 @@ function renderTasksPanel(type) {
     const c = document.createElement('div');
     c.className = `card flex items-center gap-4 shadow-sm border-gray-100 ${t.checked ? 'opacity-40 bg-gray-50' : ''}`;
     c.innerHTML = `
-      <input type="checkbox" ${t.checked ? 'checked' : ''} onchange="toggleTask('${type}',${t.id})" class="w-7 h-7 rounded-lg" style="accent-color:#16a34a;">
-      <div class="flex-grow font-black text-gray-800">${t.name}</div>
-      <input type="number" value="${t.done || 0}" oninput="updateTaskDone('${type}',${t.id},this.value)" class="w-16 p-2 text-center border rounded-lg font-black text-green-700">`;
+      <input type="checkbox" ${t.checked ? 'checked' : ''} onchange="toggleTask('${type}',${t.id})" class="w-7 h-7 rounded-lg flex-shrink-0" style="accent-color:#16a34a;">
+      <div class="flex-grow font-black text-gray-800 ${t.checked ? 'line-through' : ''}">${t.name}</div>`;
     g.appendChild(c);
   });
+}
+
+async function addTask(type) {
+  const input = document.getElementById(`new-task-${type}`);
+  const name = input.value.trim();
+  if (!name) return;
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
+  const newTask = { id: Date.now(), name, done: 0, checked: false };
+  list.push(newTask);
+  input.value = '';
+  renderTasksPanel(type); renderDashboard();
+  try {
+    const action = type === 'david' ? 'updateTask' : 'updateTaskPersonal';
+    await api(action, { name, done: 0 });
+  } catch(e) { showToast('שגיאה בשמירה', '#dc2626'); }
 }
 
 async function toggleTask(type, id) {
