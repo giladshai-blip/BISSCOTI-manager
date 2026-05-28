@@ -1356,7 +1356,8 @@ function renderTasksPanel(type) {
     c.className = `card flex items-center gap-4 shadow-sm border-gray-100 ${t.checked ? 'opacity-40 bg-gray-50' : ''}`;
     c.innerHTML = `
       <input type="checkbox" ${t.checked ? 'checked' : ''} onchange="toggleTask('${type}',${t.id})" class="w-7 h-7 rounded-lg flex-shrink-0" style="accent-color:#16a34a;">
-      <div class="flex-grow font-black text-gray-800 ${t.checked ? 'line-through' : ''}">${t.name}</div>`;
+      <div class="flex-grow font-black text-gray-800 ${t.checked ? 'line-through' : ''}">${t.name}</div>
+      ${t.noCounter ? '' : `<input type="number" value="${t.done || 0}" oninput="updateTaskDone('${type}',${t.id},this.value)" class="w-16 p-2 text-center border rounded-lg font-black text-green-700">`}`;
     g.appendChild(c);
   });
 }
@@ -1366,7 +1367,7 @@ async function addTask(type) {
   const name = input.value.trim();
   if (!name) return;
   const list = type === 'david' ? state.tasks : state.tasksPersonal;
-  const newTask = { id: Date.now(), name, done: 0, checked: false };
+  const newTask = { id: Date.now(), name, done: 0, checked: false, noCounter: true };
   list.push(newTask);
   input.value = '';
   renderTasksPanel(type); renderDashboard();
