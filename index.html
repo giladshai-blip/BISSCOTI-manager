@@ -1214,10 +1214,11 @@ function renderOrders() {
     const okAfter = after !== null && min !== null && after >= min;
     const sid   = o.id.replace(/['"]/g, '');
 
+    const isMushroom = o.id === 'פטריות';
     const counter = `<div class="oc">
-      <button class="oc-btn oc-minus" onclick="adjustOrder('${sid}',-1)">−</button>
-      <input class="oc-input" id="order-input-${sid}" type="number" value="${o.amountToOrder || 0}" oninput="updateOrderAmount('${sid}',this.value)" min="0">
-      <button class="oc-btn oc-plus"  onclick="adjustOrder('${sid}', 1)">+</button>
+      <button class="oc-btn oc-minus" onclick="adjustOrder('${sid}',-1)" style="${isMushroom ? 'font-size:11px;font-weight:900;' : ''}">−${isMushroom ? '50' : ''}</button>
+      <input class="oc-input" id="order-input-${sid}" type="number" value="${o.amountToOrder || 0}" oninput="updateOrderAmount('${sid}',this.value)" min="0" step="${isMushroom ? 50 : 1}">
+      <button class="oc-btn oc-plus"  onclick="adjustOrder('${sid}', 1)" style="${isMushroom ? 'font-size:11px;font-weight:900;' : ''}">+${isMushroom ? '50' : ''}</button>
     </div>`;
 
     const statsHtml = o.orderOnly ? '' : `
@@ -1251,7 +1252,8 @@ function renderOrders() {
 
 function adjustOrder(id, delta) {
   const o = orders.find(x => x.id === id); if (!o) return;
-  const v = Math.max(0, (Number(o.amountToOrder) || 0) + delta);
+  const step = id === 'פטריות' ? 50 * Math.sign(delta) : delta;
+  const v = Math.max(0, (Number(o.amountToOrder) || 0) + step);
   o.amountToOrder = v;
   const input = document.getElementById('order-input-' + id);
   if (input) input.value = v;
