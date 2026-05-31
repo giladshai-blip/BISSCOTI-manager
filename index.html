@@ -1413,7 +1413,7 @@ function sendTasks(type) {
   const checked = list.filter(t => t.checked);
   if (!checked.length) return showToast('אין משימות מסומנות', '#f59e0b');
   let text = `*${title}*\nתאריך: ${dateStr} | ${timeStr}\n\n`;
-  checked.forEach(t => text += `✅ ${t.name}\n\n`);
+  checked.forEach(t => text += `✅ ${t.name}${!t.noCounter && t.done > 0 ? ': ' + t.done : ''}\n\n`);
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 }
 
