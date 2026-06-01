@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biscotti API Status</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #F9F9F7;
+            color: #5A5A40;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .card {
+            background: white;
+            padding: 3rem;
+            border-radius: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            max-width: 400px;
+            border: 1px solid #E5E5E0;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #10B981;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 8px;
+            animation: pulse 2s infinite;
+        }
+        h1 { margin: 1rem 0; font-weight: 900; letter-spacing: -1px; }
+        p { color: #9CA3AF; font-size: 0.9rem; line-height: 1.5; }
+        .url-box {
+            background: #F3F4F6;
+            padding: 10px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-top: 20px;
+            word-break: break-all;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="status-dot"></div>
+        <span style="font-weight: bold; color: #10B981;">API פעיל ומחובר</span>
+        <h1>Biscotti Manager</h1>
+        <p>ממשק הסנכרון של האפליקציה מול Google Sheets פועל בצורה תקינה.</p>
+        <p>העתק את ה-URL של פריסת ה-Web App הנוכחית והגדר אותו ב-Settings של האפליקציה תחת השם <b>VITE_GAS_URL</b>.</p>
+    </div>
+</body>
+</html>

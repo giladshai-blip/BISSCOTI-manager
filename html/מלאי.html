@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#1a73e8">
+    <title>מלאי והזמנות | Biscotti</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap');
+        :root { --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: env(safe-area-inset-top, 0px); }
+        body { font-family: 'Assistant', sans-serif; background: #f8f9fa; color: #202124; margin: 0; -webkit-tap-highlight-color: transparent; }
+
+        .mobile-header {
+            position: fixed; top: 0; width: 100%;
+            padding-top: var(--safe-top);
+            height: calc(60px + var(--safe-top));
+            background: white; border-bottom: 1px solid #dadce0;
+            display: flex; align-items: center; justify-content: space-between;
+            padding-left: 16px; padding-right: 16px; z-index: 40;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+        }
+
+        .mobile-nav {
+            position: fixed; bottom: 0; width: 100%; height: calc(64px + var(--safe-bottom));
+            background: white; border-top: 1px solid #dadce0;
+            display: flex; padding-bottom: var(--safe-bottom); z-index: 40;
+        }
+        .mobile-nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; color: #5f6368; gap: 3px; font-size: 10px;
+            cursor: pointer; border: none; background: transparent; font-family: inherit;
+        }
+        .mobile-nav-item.active { color: #1a73e8; font-weight: 800; }
+
+        .desktop-sidebar {
+            width: 240px; position: fixed; right: 0; top: 0; height: 100vh;
+            background: white; border-left: 1px solid #dadce0;
+            display: none; flex-direction: column; z-index: 50;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px; padding: 11px 20px;
+            color: #3c4043; border-radius: 0 25px 25px 0; margin: 3px 0;
+            transition: background 0.2s; cursor: pointer; text-decoration: none;
+            font-weight: 600; font-size: 0.9rem;
+        }
+        .nav-item.active { background: #e8f0fe; color: #1a73e8; font-weight: 800; }
+
+        .main-content {
+            padding-top: calc(72px + var(--safe-top));
+            padding-bottom: calc(80px + var(--safe-bottom));
+            padding-left: 16px; padding-right: 16px;
+        }
+
+        @media (min-width: 768px) {
+            .desktop-sidebar { display: flex; }
+            .mobile-header, .mobile-nav { display: none !important; }
+            .main-content { margin-right: 240px; padding: 32px 40px; }
+        }
+
+        .card { background: white; border: 1px solid #dadce0; border-radius: 14px; padding: 16px; }
+
+        /* ── View toggle ── */
+        .view-toggle-btn {
+            width: 34px; height: 34px; border-radius: 8px; border: 1px solid #dadce0;
+            background: white; color: #5f6368; cursor: pointer; font-size: 14px;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .view-toggle-btn.active-toggle { background: #1a73e8; color: white; border-color: #1a73e8; }
+
+        /* ── Counter (+/−) ── */
+        .order-counter { display: flex; align-items: center; gap: 6px; }
+        .order-counter-btn {
+            width: 36px; height: 36px; border-radius: 10px; border: none; cursor: pointer;
+            font-size: 18px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: transform 0.1s, opacity 0.1s;
+        }
+        .order-counter-btn:active { transform: scale(0.88); }
+        .order-btn-minus { background: #fee2e2; color: #dc2626; }
+        .order-btn-plus  { background: #dcfce7; color: #16a34a; }
+        .order-counter-input {
+            width: 52px; height: 36px; text-align: center; font-size: 1rem; font-weight: 800;
+            border: 2px solid #bfdbfe; border-radius: 10px; background: white;
+            font-family: 'Assistant', sans-serif; -moz-appearance: textfield;
+        }
+        .order-counter-input::-webkit-outer-spin-button,
+        .order-counter-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .order-counter-input:focus { outline: none; border-color: #1a73e8; }
+
+        /* ── List mode ── */
+        .list-row {
+            background: white; border: 1px solid #dadce0; border-radius: 12px;
+            padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+            margin-bottom: 6px;
+        }
+        .list-row.low-row { background: #fff7ed; border-color: #fed7aa; }
+        .list-row-name { font-weight: 800; font-size: 0.9rem; flex: 1; min-width: 0; }
+        .list-row-stats { font-size: 0.75rem; font-weight: 700; color: #5f6368; text-align: center; min-width: 60px; }
+        .list-row-stats span { display: block; }
+        .list-row-stats .after-val { color: #16a34a; }
+        .list-row-stats .after-low { color: #ea580c; }
+
+        #toast { position: fixed; z-index: 9999; bottom: calc(80px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); }
+        @media (min-width: 768px) { #toast { bottom: 32px; right: 32px; left: auto; transform: none; } }
+    </style>
+</head>
+<body>
+
+<script>
+    const APP_URL = 'https://script.google.com/macros/s/AKfycbxaAORg5xUnEL_TIQ4q9PKvecn71KX18mF0t3daazQYkRNvnfSKSSeDL67rY1CqMqRdqw/exec';
+    let inventory = [];
+    let orders = [];
+
+    function showToast(m, bg = 'bg-gray-800') {
+        const t = document.getElementById('toast');
+        t.innerText = m;
+        t.className = `fixed z-[9999] text-white px-6 py-3 rounded-xl shadow-2xl text-sm font-bold ${bg}`;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 3500);
+    }
+
+    const api = async (action, payload = null) => {
+        const url = `${APP_URL}?action=${action}&payload=${encodeURIComponent(JSON.stringify(payload))}&t=${Date.now()}`;
+        const res = await fetch(url, { redirect: 'follow' });
+        const json = await res.json();
+        if (json.status === 'error') throw new Error(json.message);
+        return json.data;
+    };
+
+    function setSyncStatus(html) {
+        ['sync-status', 'sync-status-desktop'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        });
+    }
+
+    async function loadData() {
+        try {
+            const data = await api('getBootstrap');
+            const invMap = new Map();
+            (data.inventory || []).forEach(i => invMap.set(i.id.trim(), i));
+            inventory = [...invMap.values()];
+            const EXTRA_ORDER_ITEMS = ['פטריות']; // items for ordering only, not in inventory
+            if (orders.length === 0) {
+                orders = inventory.map(i => ({ id: i.id, amountToOrder: '' }));
+                EXTRA_ORDER_ITEMS.forEach(id => {
+                    if (!orders.find(o => o.id === id)) orders.push({ id, amountToOrder: '', orderOnly: true });
+                });
+            } else {
+                inventory.forEach(item => {
+                    if (!orders.find(o => o.id === item.id)) orders.push({ id: item.id, amountToOrder: '' });
+                });
+                EXTRA_ORDER_ITEMS.forEach(id => {
+                    if (!orders.find(o => o.id === id)) orders.push({ id, amountToOrder: '', orderOnly: true });
+                });
+            }
+            renderAll();
+            const now = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+            setSyncStatus(`<i class="fa-solid fa-check-circle text-green-500"></i> ${now}`);
+        } catch (e) {
+            showToast('שגיאת סנכרון', 'bg-red-600');
+            setSyncStatus('<i class="fa-solid fa-xmark text-red-500"></i>');
+        }
+    }
+
+    function shareWorkerApp() {
+        const url = 'https://giladshai-blip.github.io/BISSCOTI-manager/html/%D7%A2%D7%95%D7%91%D7%93-%D7%9E%D7%9C%D7%90%D7%99.html';
+        if (navigator.share) {
+            navigator.share({ title: 'ספירת מלאי ירקות', text: 'אפליקציית ספירת מלאי', url });
+        } else {
+            window.open(`https://wa.me/?text=${encodeURIComponent('אפליקציית ספירת מלאי ירקות:\n' + url)}`, '_blank');
+        }
+    }
+
+
+</script>
+
+<div id="toast" style="display:none;"></div>
+
+<!-- Mobile Header -->
+<header class="mobile-header">
+    <div class="flex items-center gap-2">
+        <a href="https://giladshai-blip.github.io/BISSCOTI-manager/" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 border border-gray-200">
+            <i class="fa-solid fa-house text-sm"></i>
+        </a>
+        <div class="w-8 h-8 bg-green-600 rounded flex items-center justify-center text-white font-black text-sm">M</div>
+        <span class="text-lg font-bold">מלאי והזמנות</span>
+    </div>
+    <p id="sync-status" class="text-[10px] text-gray-400 text-center"></p>
+</header>
+
+<!-- Mobile Nav -->
+<nav class="mobile-nav">
+    <button onclick="switchView('inventory')" data-nav="inventory" class="mobile-nav-item active">
+        <i class="fa-solid fa-box text-lg"></i><span>מלאי</span>
+    </button>
+    <button onclick="switchView('orders')" data-nav="orders" class="mobile-nav-item">
+        <i class="fa-solid fa-cart-plus text-lg"></i><span>הזמנות</span>
+    </button>
+</nav>
+
+<!-- Desktop Sidebar -->
+<nav class="desktop-sidebar">
+    <div class="px-5 py-7 flex items-center gap-3 border-b">
+        <div class="w-9 h-9 bg-green-600 rounded flex items-center justify-center text-white font-black">M</div>
+        <span class="text-xl font-bold">מלאי קישים</span>
+    </div>
+    <div class="flex-grow px-2 pt-4">
+        <a onclick="switchView('inventory')" data-nav="inventory" class="nav-item active">
+            <i class="fa-solid fa-box w-5"></i> <span>מלאי ירקות</span>
+        </a>
+        <a onclick="switchView('orders')" data-nav="orders" class="nav-item">
+            <i class="fa-solid fa-basket-shopping w-5"></i> <span class="text-green-700 font-bold">הזמנת ירקות</span>
+        </a>
+    </div>
+    <div class="p-5 border-t mt-auto space-y-2">
+        <a href="https://giladshai-blip.github.io/BISSCOTI-manager/" class="w-full flex items-center justify-center gap-2 p-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition font-bold">
+            <i class="fa-solid fa-house"></i> דף הבית
+        </a>
+        <p id="sync-status-desktop" class="text-[10px] text-gray-400 text-center"></p>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content">
+
+    <!-- Inventory View -->
+    <div id="view-inventory" class="view block">
+        <header class="flex flex-wrap gap-3 justify-between items-center mb-5">
+            <h2 class="text-xl font-bold text-gray-800">מלאי ירקות</h2>
+            <div class="flex gap-2">
+<button onclick="syncFromWorker()" id="btn-sync-worker"
+                    class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-sm text-sm hover:bg-blue-700 transition">
+                    <i id="sync-worker-icon" class="fa-solid fa-rotate"></i> סנכרן מספירת עובד
+                </button>
+                <button onclick="toggleEditMin()" id="btn-edit-min"
+                    class="bg-white border px-4 py-2 rounded-xl font-bold text-gray-600 shadow-sm text-sm">
+                    <i class="fa-solid fa-pen-to-square ml-1"></i> ערוך מינימום
+                </button>
+            </div>
+        </header>
+        <div id="sync-worker-status" class="hidden mb-4 p-3 rounded-xl text-sm font-bold text-center"></div>
+        <!-- View toggle for inventory -->
+        <div class="flex justify-end mb-3 gap-1">
+            <button onclick="setView('inv','grid')" id="inv-btn-grid" class="view-toggle-btn" title="אריח">
+                <i class="fa-solid fa-grip"></i>
+            </button>
+            <button onclick="setView('inv','list')" id="inv-btn-list" class="view-toggle-btn active-toggle" title="רשימה">
+                <i class="fa-solid fa-list"></i>
+            </button>
+        </div>
+        <div id="inventory-grid"></div>
+    </div>
+
+    <!-- Orders View -->
+    <div id="view-orders" class="view hidden">
+        <header class="flex justify-between items-center mb-4">
+            <button onclick="clearOrders()" class="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl font-bold border border-red-100 text-sm">
+                <i class="fa-solid fa-trash ml-1"></i> נקה
+            </button>
+            <div class="flex gap-1">
+                <button onclick="setView('ord','grid')" id="ord-btn-grid" class="view-toggle-btn" title="אריח">
+                    <i class="fa-solid fa-grip"></i>
+                </button>
+                <button onclick="setView('ord','list')" id="ord-btn-list" class="view-toggle-btn active-toggle" title="רשימה">
+                    <i class="fa-solid fa-list"></i>
+                </button>
+            </div>
+            <button onclick="sendOrderToEliyahu()" class="bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg text-sm">
+                <i class="fa-brands fa-whatsapp ml-1"></i> שלח לאליהו
+            </button>
+        </header>
+        <div id="orders-grid"></div>
+    </div>
+
+</main>
+
+<script>
+    let editMinMode = false;
+    let invView = 'list';
+    let ordView = 'list';
+
+    function setView(section, mode) {
+        if (section === 'inv') {
+            invView = mode;
+            document.getElementById('inv-btn-grid').classList.toggle('active-toggle', mode === 'grid');
+            document.getElementById('inv-btn-list').classList.toggle('active-toggle', mode === 'list');
+            renderInventory();
+        } else {
+            ordView = mode;
+            document.getElementById('ord-btn-grid').classList.toggle('active-toggle', mode === 'grid');
+            document.getElementById('ord-btn-list').classList.toggle('active-toggle', mode === 'list');
+            renderOrders();
+        }
+    }
+
+    function switchView(id) {
+        document.querySelectorAll('.view').forEach(v => { v.classList.add('hidden'); v.classList.remove('block'); });
+        const t = document.getElementById(`view-${id}`);
+        if (t) { t.classList.remove('hidden'); t.classList.add('block'); }
+        document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelectorAll(`[data-nav="${id}"]`).forEach(n => n.classList.add('active'));
+        window.scrollTo(0, 0);
+    }
+
+    async function syncFromWorker() {
+        const icon   = document.getElementById('sync-worker-icon');
+        const btn    = document.getElementById('btn-sync-worker');
+        const status = document.getElementById('sync-worker-status');
+
+        icon.classList.add('animate-spin');
+        btn.disabled = true;
+        status.className = 'mb-4 p-3 rounded-xl text-sm font-bold text-center bg-blue-50 text-blue-700';
+        status.textContent = 'מסנכרן עם ספירת עובד...';
+
+        try {
+            const res = await api('syncFromYerakot');
+            status.className = 'mb-4 p-3 rounded-xl text-sm font-bold text-center bg-green-50 text-green-700';
+            status.textContent = `✓ סונכרן בהצלחה — ${res.updated} פריטים עודכנו`;
+            await loadData();
+            setTimeout(() => { status.className = 'hidden'; }, 4000);
+        } catch (e) {
+            status.className = 'mb-4 p-3 rounded-xl text-sm font-bold text-center bg-red-50 text-red-700';
+            status.textContent = 'שגיאה בסנכרון — בדוק הרשאות ב-Apps Script';
+        }
+
+        icon.classList.remove('animate-spin');
+        btn.disabled = false;
+    }
+
+    function toggleEditMin() {
+        editMinMode = !editMinMode;
+        const btn = document.getElementById('btn-edit-min');
+        if (btn) btn.className = editMinMode
+            ? 'bg-blue-600 text-white border px-4 py-2 rounded-xl font-bold shadow-sm text-sm'
+            : 'bg-white border px-4 py-2 rounded-xl font-bold text-gray-600 shadow-sm text-sm';
+        renderInventory();
+    }
+
+    function renderInventory() {
+        const g = document.getElementById('inventory-grid');
+        if (!g) return;
+        g.innerHTML = '';
+        g.className = invView === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 gap-3' : '';
+
+        inventory.forEach(i => {
+            const low = Number(i.qty) < Number(i.min);
+            const c   = document.createElement('div');
+
+            if (invView === 'grid') {
+                c.className = `card shadow-sm ${low ? 'border-orange-300 bg-orange-50' : 'border-gray-100'}`;
+                c.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-black text-gray-800">${i.id}</h4>
+                        <span class="text-[10px] px-2 py-1 rounded-lg font-black ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600">
+                        <span>מלאי נוכחי:</span>
+                        <input type="number" value="${i.qty}" oninput="updateInv('${i.id}', this.value, undefined)"
+                            class="w-20 p-1 border rounded-lg font-black text-blue-700 bg-white text-center">
+                    </div>
+                    <div class="flex items-center justify-between gap-2 text-xs mt-3 font-bold ${editMinMode ? 'opacity-100' : 'opacity-40'}">
+                        <span>מינימום:</span>
+                        <input type="number" value="${i.min}" oninput="updateInv('${i.id}', undefined, this.value)"
+                            ${editMinMode ? '' : 'disabled'}
+                            class="w-20 p-1 border rounded-lg text-center ${editMinMode ? 'border-blue-400 text-blue-700' : ''}">
+                    </div>`;
+            } else {
+                c.className = `list-row${low ? ' low-row' : ''}`;
+                c.innerHTML = `
+                    <div class="list-row-name">${i.id}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-black mr-1 ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span>
+                    </div>
+                    <div class="list-row-stats">
+                        <span class="text-gray-400 text-[10px]">מלאי</span>
+                        <span class="${low ? 'text-orange-600' : 'text-gray-800'} text-sm">${i.qty}</span>
+                    </div>
+                    <div class="list-row-stats">
+                        <span class="text-gray-400 text-[10px]">מינימום</span>
+                        <span class="text-gray-800 text-sm">${i.min}</span>
+                    </div>
+                    <input type="number" value="${i.qty}" oninput="updateInv('${i.id}', this.value, undefined)"
+                        class="w-16 p-1 border rounded-lg font-black text-blue-700 bg-white text-center text-sm">`;
+            }
+            g.appendChild(c);
+        });
+    }
+
+    async function updateInv(id, q, m) {
+        const i = inventory.find(x => x.id === id);
+        if (!i) return;
+        if (q !== undefined) i.qty = q;
+        if (m !== undefined) i.min = m;
+        renderInventory();
+        renderOrders();
+        await api('updateInventory', { id: i.id, qty: i.qty, min: i.min });
+    }
+
+    function renderOrders() {
+        const g = document.getElementById('orders-grid');
+        if (!g) return;
+        g.innerHTML = '';
+        g.className = ordView === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3' : '';
+
+        orders.forEach(o => {
+            const inv     = o.orderOnly ? null : (inventory.find(i => i.id === o.id) || { qty: 0, min: 0 });
+            const cur     = inv ? (Number(inv.qty) || 0) : null;
+            const min     = inv ? (Number(inv.min) || 0) : null;
+            const ord     = Number(o.amountToOrder) || 0;
+            const after   = cur !== null ? cur + ord : null;
+            const low     = cur !== null && min !== null && cur < min;
+            const okAfter = after !== null && min !== null && after >= min;
+            const safeId  = o.id.replace(/['"]/g, '');
+            const counter = `
+                <div class="order-counter">
+                    <button class="order-counter-btn order-btn-minus" onclick="adjustOrder('${safeId}',-1)">−</button>
+                    <input class="order-counter-input" id="order-input-${safeId}" type="number"
+                        value="${o.amountToOrder || 0}" oninput="updateOrderAmount('${safeId}',this.value)" min="0">
+                    <button class="order-counter-btn order-btn-plus"  onclick="adjustOrder('${safeId}', 1)">+</button>
+                </div>`;
+
+            const statsHtml = o.orderOnly ? '' : `
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+                        <span>מלאי כעת:</span>
+                        <span class="font-black ${low ? 'text-orange-600' : 'text-gray-700'}">${cur}</span>
+                    </div>
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-3">
+                        <span>אחרי הזמנה:</span>
+                        <span id="after-${o.id}" class="font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}">${after}</span>
+                    </div>`;
+
+            const c = document.createElement('div');
+            if (ordView === 'grid') {
+                c.className = `card ${low ? 'bg-orange-50 border-orange-200' : 'border-gray-100 shadow-sm'}`;
+                c.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-black text-gray-800 text-sm">${o.id}</h4>
+                        ${low ? '<span class="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black">חסר</span>' : ''}
+                    </div>
+                    ${statsHtml}
+                    ${counter}`;
+            } else {
+                c.className = `list-row${low ? ' low-row' : ''}`;
+                c.innerHTML = `
+                    <div class="list-row-name">${o.id}</div>
+                    ${o.orderOnly ? '' : `
+                    <div class="list-row-stats">
+                        <span class="text-gray-400 text-[10px]">כעת</span>
+                        <span class="${low ? 'text-orange-600' : 'text-gray-800'} font-black">${cur}</span>
+                    </div>
+                    <div class="list-row-stats">
+                        <span class="text-gray-400 text-[10px]">אחרי</span>
+                        <span id="after-${o.id}" class="font-black ${okAfter ? 'after-val' : 'after-low'}">${after}</span>
+                    </div>`}
+                    ${counter}`;
+            }
+            g.appendChild(c);
+        });
+    }
+
+    function adjustOrder(id, delta) {
+        const o = orders.find(x => x.id === id);
+        if (!o) return;
+        const newVal = Math.max(0, (Number(o.amountToOrder) || 0) + delta);
+        o.amountToOrder = newVal;
+        const input = document.getElementById('order-input-' + id);
+        if (input) input.value = newVal;
+        updateOrderAmount(id, newVal);
+    }
+
+    function updateOrderAmount(id, val) {
+        const o = orders.find(x => x.id === id);
+        if (!o) return;
+        o.amountToOrder = val;
+        const inv   = inventory.find(i => i.id === id) || { qty: 0, min: 0 };
+        const after = (Number(inv.qty) || 0) + (Number(val) || 0);
+        const okAfter = after >= (Number(inv.min) || 0);
+        const el = document.getElementById(`after-${id}`);
+        if (el) {
+            el.textContent = after;
+            el.className = `font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}`;
+        }
+    }
+
+    function sendOrderToEliyahu() {
+        const toSend = orders.filter(o => o.amountToOrder > 0);
+        if (!toSend.length) return showToast('לא הוזנו כמויות', 'bg-red-600');
+        const date = new Date().toLocaleDateString('he-IL');
+        let text = `*הזמנת ירקות מחלקת קישים*\nתאריך: ${date}\n\n`;
+        toSend.forEach(o => text += `${o.id}: ${o.amountToOrder}\n\n`);
+        window.open(`https://wa.me/972524048099?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    function clearOrders() {
+        if (!confirm('לנקות את ההזמנה?')) return;
+        orders.forEach(o => o.amountToOrder = '');
+        renderOrders();
+    }
+
+    function renderAll() {
+        renderInventory();
+        renderOrders();
+    }
+
+    window.onload = () => { loadData(); setInterval(loadData, 10000); };
+</script>
+</body>
+</html>

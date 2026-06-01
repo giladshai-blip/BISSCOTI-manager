@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="apple-mobile-web-app-title" content="ביסקוטי">
+  <title>Biscotti Manager</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2316a34a%22/><text x=%2250%22 y=%2272%22 font-size=%2265%22 text-anchor=%22middle%22>🍪</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2316a34a%22/><text x=%2250%22 y=%2272%22 font-size=%2265%22 text-anchor=%22middle%22>🍪</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body { font-family: 'Heebo', sans-serif; background: #f8fafc; color: #0f172a; direction: rtl; -webkit-font-smoothing: antialiased; }
+
+    :root {
+      --safe-top:    env(safe-area-inset-top,    0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --header-h: 60px;
+      --sidebar-w: 240px;
+      --nav-h: 64px;
+      --green: #16a34a;
+    }
+
+    /* ── Shell Header ───────────────────────────────────────── */
+    .shell-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      height: calc(var(--header-h) + var(--safe-top));
+      padding-top: var(--safe-top);
+      background: white; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center;
+      padding-left: 16px; padding-right: 16px;
+      justify-content: space-between;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+    }
+
+    /* ── Desktop Sidebar ─────────────────────────────────────── */
+    .sidebar {
+      position: fixed; top: calc(var(--header-h) + var(--safe-top)); right: 0;
+      width: var(--sidebar-w);
+      height: calc(100vh - var(--header-h) - var(--safe-top));
+      background: white; border-left: 1px solid #e2e8f0;
+      display: none; flex-direction: column; z-index: 40;
+      overflow-y: auto;
+    }
+    @media (min-width: 768px) { .sidebar { display: flex; } }
+
+    .sidebar-item {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 14px; border-radius: 12px; margin: 2px 8px;
+      color: #475569; cursor: pointer;
+      border: none; background: transparent; font-family: inherit;
+      font-size: 0.875rem; font-weight: 600;
+      transition: all 0.15s; width: calc(100% - 16px); text-align: right;
+    }
+    .sidebar-item:hover { background: #f1f5f9; color: #0f172a; }
+    .sidebar-item.active { background: #f0fdf4; color: var(--green); font-weight: 800; }
+    .sidebar-item.coming-soon { opacity: 0.5; cursor: default; pointer-events: none; }
+    .badge-soon { font-size: 9px; font-weight: 900; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 6px; margin-right: auto; letter-spacing: 0.3px; }
+    .sidebar-item .si-icon {
+      width: 32px; height: 32px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0; transition: all 0.15s;
+      background: #f1f5f9; color: #64748b;
+    }
+    .sidebar-item.active .si-icon { background: #dcfce7; color: var(--green); }
+    .sidebar-section { font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 1.2px; text-transform: uppercase; padding: 14px 22px 4px; }
+
+    /* ── Mobile Bottom Nav ───────────────────────────────────── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+      height: calc(var(--nav-h) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: white; border-top: 1px solid #e2e8f0;
+      display: flex; box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+    }
+    @media (min-width: 768px) { .bottom-nav { display: none; } }
+
+    .bn-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 3px; font-size: 10px; font-family: inherit;
+      color: #94a3b8; cursor: pointer; border: none; background: transparent;
+      transition: color 0.2s; touch-action: manipulation;
+    }
+    .bn-item.active { color: var(--green); font-weight: 800; }
+    .bn-icon {
+      width: 30px; height: 30px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; transition: background 0.2s;
+    }
+    .bn-item.active .bn-icon { background: #dcfce7; }
+
+    /* ── Main content ────────────────────────────────────────── */
+    .main-content {
+      padding-top: calc(var(--header-h) + var(--safe-top) + 20px);
+      padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+      padding-left: 16px; padding-right: 16px;
+      min-height: 100vh;
+    }
+    @media (min-width: 768px) {
+      .main-content {
+        margin-right: var(--sidebar-w);
+        padding: calc(var(--header-h) + 32px) 40px 40px;
+      }
+    }
+
+    /* ── View management ─────────────────────────────────────── */
+    .app-view { display: none; }
+    .app-view.active { display: block; }
+
+    /* ── Full-screen iframe views ────────────────────────────── */
+    #view-maintenance.active /*, #view-recipes.active [RECIPES-MODULE] */ {
+      position: fixed;
+      top: calc(var(--header-h) + var(--safe-top));
+      left: 0; right: 0; bottom: 0;
+      z-index: 20; background: white; display: flex; flex-direction: column;
+    }
+    @media (min-width: 768px) {
+      #view-maintenance.active, #view-recipes.active { right: var(--sidebar-w); }
+    }
+    #maintenance-frame /*, #recipes-frame [RECIPES-MODULE] */ { width: 100%; flex: 1; border: none; display: block; }
+
+    /* ── Cards & shared UI ───────────────────────────────────── */
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; }
+
+    /* Sub-tabs (inside a view) */
+    .sub-tabs {
+      display: flex; gap: 4px; background: #f1f5f9;
+      border-radius: 12px; padding: 4px; margin-bottom: 20px;
+    }
+    .sub-tab {
+      flex: 1; text-align: center; padding: 8px 4px; border-radius: 9px;
+      border: none; cursor: pointer; font-family: inherit;
+      font-size: 0.85rem; font-weight: 700; color: #64748b;
+      background: transparent; transition: all 0.2s; touch-action: manipulation;
+    }
+    .sub-tab.active { background: white; color: var(--green); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+    /* View toggle buttons */
+    .vt-btn {
+      width: 34px; height: 34px; border-radius: 8px; border: 1px solid #e2e8f0;
+      background: white; color: #94a3b8; cursor: pointer; font-size: 14px;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: all 0.15s; touch-action: manipulation;
+    }
+    .vt-btn.on { background: var(--green); color: white; border-color: var(--green); }
+
+    /* Order counter */
+    .oc { display: flex; align-items: center; gap: 6px; }
+    .oc-btn {
+      width: 38px; height: 38px; border-radius: 10px; border: none; cursor: pointer;
+      font-size: 20px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform 0.1s; touch-action: manipulation;
+    }
+    .oc-btn:active { transform: scale(0.86); }
+    .oc-minus { background: #fee2e2; color: #dc2626; }
+    .oc-plus  { background: #dcfce7; color: #16a34a; }
+    .oc-input {
+      width: 54px; height: 38px; text-align: center; font-size: 1rem; font-weight: 800;
+      border: 2px solid #bfdbfe; border-radius: 10px; background: white;
+      font-family: 'Heebo', sans-serif; -moz-appearance: textfield;
+    }
+    .oc-input::-webkit-outer-spin-button,
+    .oc-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .oc-input:focus { outline: none; border-color: var(--green); }
+
+    /* List row */
+    .list-row {
+      background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 12px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px;
+    }
+    .list-row.low-row { background: #fff7ed; border-color: #fed7aa; }
+    .list-row-name { font-weight: 800; font-size: 0.9rem; flex: 1; min-width: 0; }
+    .list-row-stats { font-size: 0.75rem; font-weight: 700; color: #64748b; text-align: center; min-width: 56px; }
+
+    /* Toast */
+    #toast {
+      position: fixed; z-index: 9999;
+      bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+      left: 50%; transform: translateX(-50%);
+      display: none; white-space: nowrap;
+    }
+    @media (min-width: 768px) { #toast { bottom: 32px; right: 32px; left: auto; transform: none; } }
+
+    /* CRM modal slide-up */
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes popIn   { from { transform: scale(0.92) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+<!-- ── Toast ──────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<!-- ── Shell Header ───────────────────────────────────────────── -->
+<header class="shell-header">
+  <div class="flex items-center gap-3">
+    <div style="width:38px;height:38px;background:linear-gradient(135deg,#16a34a,#15803d);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(22,163,74,.3);flex-shrink:0;">🍪</div>
+    <div>
+      <div style="font-size:1.05rem;font-weight:900;color:#0f172a;line-height:1.2;">Biscotti Manager</div>
+      <div id="sync-status" style="font-size:10px;color:#94a3b8;font-weight:600;"></div>
+    </div>
+  </div>
+  <a href="html/עובד-מלאי.html" target="_blank"
+     style="font-size:12px;font-weight:800;color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0;padding:7px 12px;border-radius:10px;display:flex;align-items:center;gap:6px;text-decoration:none;">
+    <i class="fa-solid fa-person-circle-check"></i> עובד
+  </a>
+</header>
+
+<!-- ── Desktop Sidebar ─────────────────────────────────────────── -->
+<nav class="sidebar">
+  <div style="padding:16px 14px 8px;">
+    <div class="sidebar-section" style="padding:0 8px 8px;">ניהול מרכזי</div>
+    <button class="sidebar-item active" data-nav="dashboard" onclick="switchView('dashboard')">
+      <div class="si-icon"><i class="fa-solid fa-chart-pie"></i></div><span>דשבורד</span>
+    </button>
+    <div class="sidebar-section">ייצור</div>
+    <!-- [RECIPES-MODULE] <button class="sidebar-item" data-nav="recipes" onclick="switchView('recipes')">
+      <div class="si-icon"><i class="fa-solid fa-book-open"></i></div><span>מתכונים</span>
+    </button> -->
+    <button class="sidebar-item coming-soon" disabled>
+      <div class="si-icon"><i class="fa-solid fa-book-bookmark"></i></div><span>ספר מתכונים קישים</span><span class="badge-soon">בקרוב</span>
+    </button>
+    <button class="sidebar-item" data-nav="tasks" onclick="switchView('tasks')">
+      <div class="si-icon"><i class="fa-solid fa-list-check"></i></div><span>משימות</span>
+    </button>
+    <div class="sidebar-section">עובדים</div>
+    <button class="sidebar-item" data-nav="employees" onclick="switchView('employees')">
+      <div class="si-icon"><i class="fa-solid fa-users"></i></div><span>עובדים ו-CRM</span>
+    </button>
+    <button class="sidebar-item" data-nav="hours" onclick="switchView('hours')">
+      <div class="si-icon"><i class="fa-solid fa-clock"></i></div><span>שעות תקן</span>
+    </button>
+    <div class="sidebar-section">מלאי</div>
+    <button class="sidebar-item" data-nav="inventory" onclick="switchView('inventory')">
+      <div class="si-icon"><i class="fa-solid fa-box"></i></div><span>מלאי ירקות</span>
+    </button>
+    <button class="sidebar-item" data-nav="orders" onclick="switchView('orders')">
+      <div class="si-icon"><i class="fa-solid fa-basket-shopping"></i></div><span>הזמנות</span>
+    </button>
+    <div class="sidebar-section">כלים</div>
+    <button class="sidebar-item" data-nav="maintenance" onclick="switchView('maintenance')">
+      <div class="si-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div><span>אחזקה</span>
+    </button>
+  </div>
+  <div style="margin-top:auto;padding:12px 14px;border-top:1px solid #e2e8f0;">
+    <div id="sync-status-desktop" style="font-size:10px;color:#94a3b8;text-align:center;font-weight:600;"></div>
+  </div>
+</nav>
+
+<!-- ── Mobile Bottom Nav ───────────────────────────────────────── -->
+<nav class="bottom-nav">
+  <button class="bn-item active" data-nav="dashboard" onclick="switchView('dashboard')">
+    <div class="bn-icon"><i class="fa-solid fa-chart-pie"></i></div><span>דשבורד</span>
+  </button>
+  <button class="bn-item" data-nav="maintenance" onclick="switchView('maintenance')">
+    <div class="bn-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div><span>אחזקה</span>
+  </button>
+  <!-- [RECIPES-MODULE] <button class="bn-item" data-nav="recipes" onclick="switchView('recipes')">
+    <div class="bn-icon"><i class="fa-solid fa-book-open"></i></div><span>מתכונים</span>
+  </button> -->
+  <button class="bn-item" data-nav="orders" onclick="switchView('orders')">
+    <div class="bn-icon"><i class="fa-solid fa-basket-shopping"></i></div><span>הזמנות</span>
+  </button>
+  <button class="bn-item" data-nav="employees" onclick="switchView('employees')">
+    <div class="bn-icon"><i class="fa-solid fa-users"></i></div><span>עובדים</span>
+  </button>
+  <button class="bn-item" data-nav="tasks" onclick="switchView('tasks')">
+    <div class="bn-icon"><i class="fa-solid fa-list-check"></i></div><span>משימות</span>
+  </button>
+</nav>
+
+<!-- ── Main Content ────────────────────────────────────────────── -->
+<main class="main-content">
+
+  <!-- ═══ DASHBOARD ══════════════════════════════════════════════ -->
+  <div id="view-dashboard" class="app-view active">
+    <div class="flex justify-between items-center mb-5">
+      <h1 class="text-2xl font-black text-gray-800">דשבורד</h1>
+      <span id="display-date" class="text-sm text-gray-400 font-medium"></span>
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <div class="card flex flex-col gap-1.5 cursor-pointer hover:border-green-300 transition" onclick="switchView('employees')">
+        <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">עובדים</div>
+        <div id="dash-emp-count" class="text-3xl font-black text-gray-800">–</div>
+        <div class="text-xs text-gray-400">בסיסטם</div>
+      </div>
+      <div class="card flex flex-col gap-1.5 cursor-pointer hover:border-green-300 transition" onclick="switchView('inventory')">
+        <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">מלאי</div>
+        <div id="dash-inv-ok" class="text-3xl font-black text-green-600">–</div>
+        <div id="dash-inv-low" class="text-xs font-bold text-gray-400"></div>
+      </div>
+      <div class="card flex flex-col gap-1.5 cursor-pointer hover:border-green-300 transition" onclick="switchView('tasks')">
+        <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">משימות</div>
+        <div id="dash-tasks-done" class="text-3xl font-black text-blue-600">–</div>
+        <div class="text-xs text-gray-400">הושלמו</div>
+      </div>
+      <div class="card flex flex-col gap-1.5">
+        <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">מכירות חודש</div>
+        <div id="dash-sales" class="text-3xl font-black text-purple-600">–</div>
+        <div class="text-xs text-gray-400">₪</div>
+      </div>
+    </div>
+
+    <!-- Low-inventory alert -->
+    <div id="inv-alert" class="hidden mb-5 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+      <div class="font-black text-orange-700 mb-1.5 text-sm"><i class="fa-solid fa-triangle-exclamation ml-2"></i>פריטים במלאי נמוך</div>
+      <div id="inv-alert-items" class="text-sm text-orange-600 font-bold"></div>
+    </div>
+
+    <!-- Quick-access cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+      <button onclick="switchView('employees')" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-3"><i class="fa-solid fa-users"></i></div>
+        <div class="font-black text-gray-800 text-sm">עובדים</div>
+        <div class="text-xs text-gray-400 mt-0.5">ניהול CRM ושעות</div>
+      </button>
+      <button onclick="switchView('inventory')" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5">
+        <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600 mb-3"><i class="fa-solid fa-box"></i></div>
+        <div class="font-black text-gray-800 text-sm">מלאי</div>
+        <div class="text-xs text-gray-400 mt-0.5">ירקות ומינימום</div>
+      </button>
+      <button onclick="switchView('orders')" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 mb-3"><i class="fa-solid fa-basket-shopping"></i></div>
+        <div class="font-black text-gray-800 text-sm">הזמנות</div>
+        <div class="text-xs text-gray-400 mt-0.5">שלח לאליהו</div>
+      </button>
+      <button onclick="switchView('maintenance')" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5">
+        <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500 mb-3"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+        <div class="font-black text-gray-800 text-sm">אחזקה</div>
+        <div class="text-xs text-gray-400 mt-0.5">קריאות תקלות</div>
+      </button>
+      <button onclick="switchView('tasks')" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-3"><i class="fa-solid fa-list-check"></i></div>
+        <div class="font-black text-gray-800 text-sm">משימות</div>
+        <div class="text-xs text-gray-400 mt-0.5">משימות לדוד</div>
+      </button>
+      <!-- [RECIPES-MODULE] <button onclick="switchView('recipes')" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5">
+        <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 mb-3"><i class="fa-solid fa-book-open"></i></div>
+        <div class="font-black text-gray-800 text-sm">מתכונים</div>
+        <div class="text-xs text-gray-400 mt-0.5">ניהול מתכוני ייצור</div>
+      </button> -->
+      <div class="card text-right opacity-50" style="cursor:default;">
+        <div class="flex items-start justify-between mb-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 flex-shrink-0"><i class="fa-solid fa-book-bookmark"></i></div>
+          <span style="font-size:9px;font-weight:900;background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;padding:2px 7px;border-radius:6px;">בקרוב</span>
+        </div>
+        <div class="font-black text-gray-500 text-sm">ספר מתכונים קישים</div>
+        <div class="text-xs text-gray-400 mt-0.5">מאגר מתכוני קישים</div>
+      </div>
+      <a href="html/עובד-מלאי.html" target="_blank" class="card text-right cursor-pointer hover:border-green-300 transition hover:-translate-y-0.5" style="text-decoration:none;color:inherit;border:1px solid #e2e8f0;">
+        <div class="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 mb-3"><i class="fa-solid fa-person-circle-check"></i></div>
+        <div class="font-black text-gray-800 text-sm">אפליקציית עובד</div>
+        <div class="text-xs text-gray-400 mt-0.5">ספירת מלאי</div>
+      </a>
+    </div>
+
+    <!-- Shift forecast -->
+    <div class="card bg-indigo-900 text-white border-none">
+      <div class="text-[10px] font-black opacity-60 uppercase tracking-wider mb-3">צפי סיום משמרות</div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white/10 rounded-xl p-3 text-center">
+          <div class="text-[10px] text-indigo-300 mb-1">בוקר · ממוצע שבועי</div>
+          <div class="text-2xl font-black" id="dash-weekly-morn">--:--</div>
+        </div>
+        <div class="bg-white/10 rounded-xl p-3 text-center">
+          <div class="text-[10px] text-indigo-300 mb-1">אריזה · ממוצע שבועי</div>
+          <div class="text-2xl font-black" id="dash-weekly-night">--:--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EMPLOYEES ══════════════════════════════════════════════ -->
+  <div id="view-employees" class="app-view">
+    <!-- Sub-tabs (employees / hours) — only on mobile; desktop uses sidebar items -->
+    <div class="sub-tabs md:hidden">
+      <button class="sub-tab active" id="emp-tab-list" onclick="showEmpTab('list')">עובדים ו-CRM</button>
+      <button class="sub-tab" id="emp-tab-hours" onclick="showEmpTab('hours')">שעות תקן</button>
+    </div>
+
+    <!-- Employee list panel -->
+    <div id="emp-panel-list">
+      <header class="flex flex-col gap-3 mb-5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-black text-gray-800">עובדים ו-CRM</h2>
+          <div class="flex gap-2">
+            <button onclick="setEmpLayout('grid')" id="btn-emp-grid" class="vt-btn" title="רשת"><i class="fa-solid fa-grip"></i></button>
+            <button onclick="setEmpLayout('list')" id="btn-emp-list" class="vt-btn on" title="רשימה"><i class="fa-solid fa-list"></i></button>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <div class="relative flex-grow">
+            <i class="fa-solid fa-search absolute right-3 top-3 text-gray-300 text-sm"></i>
+            <input type="text" id="emp-search" placeholder="חפש עובד..." oninput="renderEmployees()"
+              class="pr-9 w-full rounded-xl border border-gray-200 py-2.5 px-3 text-sm bg-white outline-none focus:border-green-400">
+          </div>
+          <select id="emp-filter-dept" onchange="renderEmployees()"
+            class="rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white min-w-[110px] outline-none">
+            <option value="all">כל העמדות</option>
+          </select>
+        </div>
+      </header>
+      <div id="employees-grid" class="grid grid-cols-1 gap-2"></div>
+    </div>
+
+    <!-- Hours panel -->
+    <div id="emp-panel-hours" class="hidden">
+      <h2 class="text-xl font-black text-gray-800 mb-4">שעות תקן</h2>
+
+      <!-- הזנה ידנית -->
+      <div class="card mb-5 border-green-200 bg-green-50">
+        <div class="text-xs font-black text-green-700 uppercase tracking-wider mb-3">הוסף דיווח</div>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div>
+            <label class="block text-[10px] font-black text-gray-500 mb-1">תאריך</label>
+            <input type="date" id="new-hours-date"
+              class="w-full border border-gray-200 rounded-xl px-2 py-2 text-sm font-bold bg-white outline-none focus:border-green-400">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-gray-500 mb-1">שעות עבודה</label>
+            <input type="number" id="new-hours-val" placeholder="0" min="0" step="0.5"
+              class="w-full border border-gray-200 rounded-xl px-2 py-2 text-sm font-bold bg-white outline-none focus:border-green-400">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-gray-500 mb-1">מכירות (₪)</label>
+            <input type="number" id="new-hours-sales" placeholder="0" min="0"
+              class="w-full border border-gray-200 rounded-xl px-2 py-2 text-sm font-bold bg-white outline-none focus:border-green-400">
+          </div>
+        </div>
+        <button onclick="saveHours()"
+          class="w-full bg-green-600 text-white py-2.5 rounded-xl font-black text-sm flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus"></i> שמור דיווח
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="space-y-4">
+          <div class="card bg-indigo-900 text-white border-none">
+            <div class="text-xs font-black opacity-60 uppercase tracking-wider mb-4">ממוצע חודשי</div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="bg-white/10 rounded-xl p-4 text-center">
+                <div class="text-[10px] text-indigo-300 mb-1">בוקר (06:00)</div>
+                <div class="text-2xl font-black" id="res-monthly-morn">--:--</div>
+              </div>
+              <div class="bg-white/10 rounded-xl p-4 text-center">
+                <div class="text-[10px] text-indigo-300 mb-1">אריזה (19:00)</div>
+                <div class="text-2xl font-black" id="res-monthly-night">--:--</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-white/10 rounded-lg p-3 text-center"><div class="text-[10px] opacity-60 mb-1">שעות/עובד</div><div class="text-lg font-black" id="res-avg-h">0</div></div>
+              <div class="bg-white/10 rounded-lg p-3 text-center"><div class="text-[10px] opacity-60 mb-1">פעילים</div><div class="text-lg font-black" id="res-count">0</div></div>
+            </div>
+          </div>
+          <div class="card p-0 overflow-hidden">
+            <div class="p-4 bg-gray-50 border-b text-sm font-black text-gray-700">צפי סיום 7 ימים (בוקר)</div>
+            <div class="overflow-x-auto"><table class="w-full text-sm text-center"><tbody id="shift-calc-body"></tbody></table></div>
+          </div>
+        </div>
+        <div class="card p-0 overflow-hidden">
+          <div class="p-4 bg-gray-50 border-b text-sm font-black text-gray-700">היסטוריית דיווחים</div>
+          <div class="overflow-y-auto max-h-[500px]"><table class="w-full text-sm"><tbody id="hours-table-body"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ INVENTORY ══════════════════════════════════════════════ -->
+  <div id="view-inventory" class="app-view">
+
+    <!-- Dashboard category cards -->
+    <div id="inv-dashboard" class="grid grid-cols-2 gap-3 mb-5">
+      <button onclick="showInvTab('inv')" id="inv-card-inv"
+        class="card text-right cursor-pointer transition hover:-translate-y-0.5 border-2 border-green-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center text-green-600 flex-shrink-0">
+            <i class="fa-solid fa-box"></i>
+          </div>
+          <span id="inv-card-low-badge" class="hidden text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black"></span>
+        </div>
+        <div class="font-black text-gray-800 text-sm mb-1">מלאי ירקות</div>
+        <div id="inv-card-stat" class="text-2xl font-black text-green-600">–</div>
+        <div class="text-[10px] text-gray-400 font-bold mt-0.5">תקין / סה"כ</div>
+      </button>
+
+      <button onclick="showInvTab('ord')" id="inv-card-ord"
+        class="card text-right cursor-pointer transition hover:-translate-y-0.5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0">
+            <i class="fa-solid fa-basket-shopping"></i>
+          </div>
+        </div>
+        <div class="font-black text-gray-800 text-sm mb-1">הזמנות</div>
+        <div id="ord-card-stat" class="text-2xl font-black text-purple-600">–</div>
+        <div class="text-[10px] text-gray-400 font-bold mt-0.5">פריטים בהזמנה</div>
+      </button>
+    </div>
+
+    <!-- Inventory panel -->
+    <div id="inv-panel-inv" class="hidden">
+      <header class="flex flex-wrap gap-3 justify-between items-center mb-4">
+        <div class="flex items-center gap-2">
+          <button onclick="showInvTab(null)" class="text-gray-400 hover:text-gray-600 transition">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+          <h2 class="text-xl font-black text-gray-800">מלאי ירקות</h2>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="syncFromWorker()" id="btn-sync-worker"
+            class="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-2 rounded-xl font-bold text-sm">
+            <i id="sync-worker-icon" class="fa-solid fa-rotate"></i> סנכרן מספירת עובד
+          </button>
+          <button onclick="toggleEditMin()" id="btn-edit-min"
+            class="bg-white border px-3 py-2 rounded-xl font-bold text-gray-600 text-sm">
+            <i class="fa-solid fa-pen-to-square ml-1"></i> ערוך מינימום
+          </button>
+        </div>
+      </header>
+      <div id="sync-worker-status" class="hidden mb-4 p-3 rounded-xl text-sm font-bold text-center"></div>
+      <div class="flex justify-end mb-3 gap-1">
+        <button onclick="setInvView('grid')" id="inv-btn-grid" class="vt-btn"><i class="fa-solid fa-grip"></i></button>
+        <button onclick="setInvView('list')" id="inv-btn-list" class="vt-btn on"><i class="fa-solid fa-list"></i></button>
+      </div>
+      <div id="inventory-grid"></div>
+    </div>
+
+    <!-- Orders panel -->
+    <div id="inv-panel-ord" class="hidden">
+      <header class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-2">
+          <button onclick="showInvTab(null)" class="text-gray-400 hover:text-gray-600 transition">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+          <h2 class="text-xl font-black text-gray-800">הזמנות</h2>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="clearOrders()" class="bg-red-50 text-red-600 px-3 py-2 rounded-xl font-bold border border-red-100 text-sm">
+            <i class="fa-solid fa-trash ml-1"></i> נקה
+          </button>
+          <div class="flex gap-1">
+            <button onclick="setOrdView('grid')" id="ord-btn-grid" class="vt-btn"><i class="fa-solid fa-grip"></i></button>
+            <button onclick="setOrdView('list')" id="ord-btn-list" class="vt-btn on"><i class="fa-solid fa-list"></i></button>
+          </div>
+        </div>
+      </header>
+      <button onclick="sendOrderToEliyahu()"
+        class="w-full mb-4 flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-black text-sm shadow-lg">
+        <i class="fa-brands fa-whatsapp"></i> שלח הזמנה לאליהו
+      </button>
+      <div id="orders-grid"></div>
+    </div>
+  </div>
+
+  <!-- [RECIPES-MODULE] ═══════════════════════════════════════════
+  <div id="view-recipes" class="app-view">
+  </div>
+  ══════════════════════════════════════════════ [RECIPES-MODULE] -->
+
+  <!-- ═══ MAINTENANCE (iframe) ═══════════════════════════════════ -->
+  <div id="view-maintenance" class="app-view">
+    <!-- iframe injected on first visit -->
+  </div>
+
+  <!-- ═══ TASKS ══════════════════════════════════════════════════ -->
+  <div id="view-tasks" class="app-view">
+    <!-- Category tabs -->
+    <div class="sub-tabs">
+      <button class="sub-tab active" id="tasks-tab-david"    onclick="showTasksTab('david')">משימות לדוד</button>
+      <button class="sub-tab"        id="tasks-tab-personal" onclick="showTasksTab('personal')">משימות אישיות</button>
+    </div>
+
+    <!-- משימות לדוד -->
+    <div id="tasks-panel-david">
+      <header class="flex justify-between items-center mb-5">
+        <button onclick="resetTasks('david')" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100 text-sm">נקה</button>
+        <div class="flex flex-col items-center gap-2">
+          <input type="date" id="tasks-date-david"
+            class="text-sm font-bold text-gray-700 border border-gray-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-green-400">
+          <button onclick="sendTasks('david')" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black shadow-lg text-sm">
+            <i class="fa-brands fa-whatsapp ml-1"></i> שלח לדוד
+          </button>
+        </div>
+      </header>
+      <div id="tasks-grid-david" class="grid grid-cols-1 gap-3"></div>
+      <div class="flex gap-2 mt-4">
+        <input type="text" id="new-task-david" placeholder="הוסף משימה..." onkeydown="if(event.key==='Enter')addTask('david')"
+          class="flex-grow border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold bg-white outline-none focus:border-green-400">
+        <button onclick="addTask('david')" class="bg-green-600 text-white px-4 py-2.5 rounded-xl font-black text-sm flex-shrink-0">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- משימות אישיות -->
+    <div id="tasks-panel-personal" class="hidden">
+      <header class="flex justify-between items-center mb-5">
+        <button onclick="resetTasks('personal')" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100 text-sm">נקה</button>
+        <div class="flex flex-col items-center gap-2">
+          <input type="date" id="tasks-date-personal"
+            class="text-sm font-bold text-gray-700 border border-gray-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-green-400">
+          <button onclick="sendTasks('personal')" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black shadow-lg text-sm">
+            <i class="fa-brands fa-whatsapp ml-1"></i> שלח
+          </button>
+        </div>
+      </header>
+      <div id="tasks-grid-personal" class="grid grid-cols-1 gap-3"></div>
+      <div class="flex gap-2 mt-4">
+        <input type="text" id="new-task-personal" placeholder="הוסף משימה..." onkeydown="if(event.key==='Enter')addTask('personal')"
+          class="flex-grow border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold bg-white outline-none focus:border-green-400">
+        <button onclick="addTask('personal')" class="bg-green-600 text-white px-4 py-2.5 rounded-xl font-black text-sm flex-shrink-0">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── CRM Modal ───────────────────────────────────────────────── -->
+<div id="crm-modal" class="fixed inset-0 bg-black/60 z-[200] items-end md:items-center justify-center hidden">
+  <div class="bg-white w-full max-w-lg md:rounded-2xl rounded-t-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+       style="animation: slideUp 0.3s ease-out;">
+    <!-- Modal header -->
+    <div class="p-6 bg-gray-50 border-b relative pt-10 md:pt-6">
+      <div class="w-10 h-1.5 bg-gray-300 rounded-full absolute top-3 left-1/2 -translate-x-1/2 md:hidden"></div>
+
+      <div id="crm-display-mode">
+        <div class="flex items-center gap-3 mb-2">
+          <h2 id="crm-name" class="text-2xl font-black text-gray-800"></h2>
+          <span id="crm-id-badge" class="bg-green-100 text-green-800 text-base px-3 py-1 rounded-lg font-black border border-green-200"></span>
+        </div>
+        <div class="flex flex-wrap gap-3 text-sm text-gray-500 font-medium">
+          <span id="crm-val-position"></span>
+          <span id="crm-val-company"></span>
+          <span class="text-green-600 font-black">התחלה: <span id="crm-val-start">--:--</span></span>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <div class="bg-green-50 text-green-700 px-3 py-2 rounded-xl text-xs font-bold border border-green-100 flex-1">תחילת עבודה: <span id="crm-val-start-date"></span></div>
+          <div class="bg-purple-50 text-purple-700 px-3 py-2 rounded-xl text-xs font-bold border border-purple-100 flex-1 text-center">וותק: <span id="crm-val-seniority"></span></div>
+        </div>
+      </div>
+
+      <div id="crm-edit-mode" class="hidden space-y-4">
+        <input type="text" id="edit-emp-name" placeholder="שם מלא" class="font-black text-xl p-3 border rounded-xl w-full outline-none focus:border-green-400">
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div><label class="block mb-1 opacity-50 uppercase font-bold">מס' עובד</label><input type="text" id="edit-emp-id" class="w-full rounded-xl border border-gray-200 p-2 outline-none"></div>
+          <div><label class="block mb-1 opacity-50 uppercase font-bold">עמדה</label><input type="text" id="edit-emp-pos" class="w-full rounded-xl border border-gray-200 p-2 outline-none"></div>
+          <div><label class="block mb-1 opacity-50 uppercase font-bold">חברה</label><input type="text" id="edit-emp-company" class="w-full rounded-xl border border-gray-200 p-2 outline-none"></div>
+          <div><label class="block mb-1 opacity-50 uppercase font-bold">טלפון</label><input type="text" id="edit-emp-phone" class="w-full rounded-xl border border-gray-200 p-2 outline-none"></div>
+          <div><label class="block mb-1 text-green-600 font-black">שעת התחלה</label><input type="time" id="edit-emp-start" class="w-full rounded-xl border-2 border-green-300 p-2 outline-none"></div>
+          <div><label class="block mb-1 opacity-50 uppercase font-bold">תאריך התחלה</label><input type="date" id="edit-emp-start-date" class="w-full rounded-xl border border-gray-200 p-2 outline-none"></div>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button onclick="saveEmpEdit()" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-black text-sm">שמור</button>
+          <button onclick="toggleEditEmp(false)" class="flex-1 bg-gray-100 py-3 rounded-xl font-black text-sm">ביטול</button>
+        </div>
+      </div>
+
+      <div class="absolute left-4 top-6 flex gap-3">
+        <button id="btn-edit-emp" onclick="toggleEditEmp(true)" class="text-gray-400 text-xl hover:text-green-600 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+        <button onclick="closeCRM()" class="text-gray-400 text-3xl leading-none">&times;</button>
+      </div>
+    </div>
+
+    <!-- Modal body -->
+    <div class="p-6 overflow-y-auto pb-12 md:pb-6">
+      <textarea id="crm-input" rows="2" class="p-4 border rounded-2xl w-full text-sm outline-none focus:border-green-400 transition" placeholder="תעד שיחה או הערה..."></textarea>
+      <button onclick="saveNote()" class="w-full mt-3 bg-green-600 text-white py-3 rounded-xl font-black text-sm">שמור הערה</button>
+      <div id="crm-history" class="mt-6 space-y-3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── JavaScript ───────────────────────────────────────────────── -->
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxaAORg5xUnEL_TIQ4q9PKvecn71KX18mF0t3daazQYkRNvnfSKSSeDL67rY1CqMqRdqw/exec';
+
+let state = { employees: [], hours: [], inventory: [], tasks: [], tasksPersonal: [] };
+let orders = [];
+let selectedEmp = null;
+let empLayout = 'list';
+let invView = 'list';
+let ordView = 'list';
+let editMinMode = false;
+let maintenanceLoaded = false;
+/* [RECIPES-MODULE] let recipesLoaded = false; */
+
+// ── API ──────────────────────────────────────────────────────────
+
+function api(action, payload = null) {
+  return new Promise((resolve, reject) => {
+    const url = `${GAS_URL}?action=${action}&payload=${encodeURIComponent(JSON.stringify(payload))}&t=${Date.now()}`;
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.timeout = 30000;
+    xhr.onload = () => {
+      try {
+        const j = JSON.parse(xhr.responseText);
+        j.status === 'error' ? reject(new Error(j.message)) : resolve(j.data);
+      } catch(e) { reject(new Error('Parse error')); }
+    };
+    xhr.onerror   = () => reject(new Error('Network error'));
+    xhr.ontimeout = () => reject(new Error('Timeout'));
+    xhr.send();
+  });
+}
+
+// ── Toast ────────────────────────────────────────────────────────
+
+function showToast(msg, bg = '#1e293b') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.cssText = `position:fixed;z-index:9999;bottom:calc(var(--nav-h) + var(--safe-bottom) + 16px);left:50%;transform:translateX(-50%);background:${bg};color:white;padding:12px 24px;border-radius:12px;font-weight:800;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.2);display:block;white-space:nowrap;`;
+  setTimeout(() => t.style.display = 'none', 3500);
+}
+
+// ── Navigation ───────────────────────────────────────────────────
+
+function switchView(id) {
+  // Map sub-section IDs to parent view + panel activation
+  const viewMap = {
+    'employees': ['employees', 'list'],
+    'hours':     ['employees', 'hours'],
+    'inventory': ['inventory', null],
+    'orders':    ['inventory', 'ord'],
+  };
+
+  let parentView = id;
+  let subPanel   = null;
+
+  if (viewMap[id]) {
+    [parentView, subPanel] = viewMap[id];
+  }
+
+  // Hide all views
+  document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+  const view = document.getElementById(`view-${parentView}`);
+  if (view) view.classList.add('active');
+
+  // Update nav active states — mark both the parent and specific sidebar item
+  document.querySelectorAll('[data-nav]').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll(`[data-nav="${parentView}"], [data-nav="${id}"]`).forEach(n => n.classList.add('active'));
+
+  // Activate sub-panel
+  if (parentView === 'employees') showEmpTab(subPanel || 'list', true);
+  if (parentView === 'inventory') showInvTab(subPanel, true);
+
+  /* [RECIPES-MODULE] — Load recipes iframe on first visit
+  if (parentView === 'recipes' && !recipesLoaded) {
+    recipesLoaded = true;
+    const frame = document.createElement('iframe');
+    frame.id = 'recipes-frame';
+    frame.src = 'html/מתכונים.html';
+    document.getElementById('view-recipes').appendChild(frame);
+  } */
+
+  // Load maintenance iframe on first visit
+  if (parentView === 'maintenance' && !maintenanceLoaded) {
+    maintenanceLoaded = true;
+    const frame = document.createElement('iframe');
+    frame.id = 'maintenance-frame';
+    frame.src = 'html/אחזקה.html';
+    document.getElementById('view-maintenance').appendChild(frame);
+  }
+
+  window.scrollTo(0, 0);
+}
+
+function showEmpTab(tab, silent = false) {
+  ['list', 'hours'].forEach(t => {
+    const panel = document.getElementById(`emp-panel-${t}`);
+    const btn   = document.getElementById(`emp-tab-${t}`);
+    if (panel) panel.classList.toggle('hidden', t !== tab);
+    if (btn)   btn.classList.toggle('active', t === tab);
+  });
+}
+
+function showInvTab(tab, silent = false) {
+  const dashboard = document.getElementById('inv-dashboard');
+  if (dashboard) dashboard.classList.toggle('hidden', tab !== null);
+
+  ['inv', 'ord'].forEach(t => {
+    const panel = document.getElementById(`inv-panel-${t}`);
+    if (panel) panel.classList.toggle('hidden', t !== tab);
+  });
+}
+
+// ── Data Loading ─────────────────────────────────────────────────
+
+function setSyncStatus(html) {
+  ['sync-status', 'sync-status-desktop'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+}
+
+let syncFailCount = 0;
+
+async function loadData() {
+  setSyncStatus('<i class="fa-solid fa-rotate fa-spin" style="color:#94a3b8"></i>');
+  try {
+    const data = await api('getBootstrap');
+    syncFailCount = 0;
+    state.employees = data.employees    || [];
+    state.hours     = data.standardHours || [];
+    state.tasks         = data.tasks         || [];
+    state.tasksPersonal = data.tasksPersonal || [];
+
+    // משימות קבועות שצריכות להופיע תמיד
+    const FIXED_DAVID_TASKS = ['כרובית על מגש'];
+    FIXED_DAVID_TASKS.forEach(name => {
+      if (!state.tasks.find(t => t.name === name))
+        state.tasks.push({ id: Date.now() + Math.random(), name, done: 0, checked: false });
+    });
+
+    const invMap = new Map();
+    (data.inventory || []).forEach(i => invMap.set(i.id.trim(), i));
+    state.inventory = [...invMap.values()];
+
+    const EXTRA = ['פטריות'];
+    if (orders.length === 0) {
+      orders = state.inventory.map(i => ({ id: i.id, amountToOrder: '' }));
+      EXTRA.forEach(id => { if (!orders.find(o => o.id === id)) orders.push({ id, amountToOrder: '', orderOnly: true }); });
+    } else {
+      state.inventory.forEach(item => { if (!orders.find(o => o.id === item.id)) orders.push({ id: item.id, amountToOrder: '' }); });
+      EXTRA.forEach(id => { if (!orders.find(o => o.id === id)) orders.push({ id, amountToOrder: '', orderOnly: true }); });
+    }
+
+    renderAll();
+    const now = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    setSyncStatus(`<i class="fa-solid fa-check-circle" style="color:#16a34a"></i> ${now}`);
+  } catch(e) {
+    syncFailCount++;
+    const retryBtn = `<button onclick="loadData()" style="margin-right:4px;color:#3b82f6;font-weight:700;background:none;border:none;cursor:pointer;font-size:10px;">↻ נסה שוב</button>`;
+    setSyncStatus(`<i class="fa-solid fa-xmark" style="color:#dc2626"></i> שגיאה ${retryBtn}`);
+    if (syncFailCount >= 3) {
+      showToast('בעיית תקשורת עם השרת', '#dc2626');
+      syncFailCount = 0;
+    }
+  }
+}
+
+function renderAll() {
+  renderDashboard();
+  renderInvDashboardCards();
+  populateDeptFilter();
+  renderEmployees();
+  renderHoursHistory();
+  updateShiftCalc();
+  renderInventory();
+  renderOrders();
+  renderTasks();
+}
+
+function renderInvDashboardCards() {
+  const ok  = state.inventory.filter(i => Number(i.qty) >= Number(i.min));
+  const low = state.inventory.filter(i => Number(i.qty) < Number(i.min) && Number(i.min) > 0);
+  const total = state.inventory.length;
+
+  const statEl = document.getElementById('inv-card-stat');
+  if (statEl) statEl.textContent = total ? `${ok.length}/${total}` : '–';
+
+  const badge = document.getElementById('inv-card-low-badge');
+  if (badge) {
+    if (low.length) {
+      badge.textContent = `${low.length} חסרים`;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  const ordEl = document.getElementById('ord-card-stat');
+  if (ordEl) {
+    const withOrder = orders.filter(o => o.amountToOrder && Number(o.amountToOrder) > 0).length;
+    ordEl.textContent = withOrder || '0';
+  }
+}
+
+// ── Dashboard ────────────────────────────────────────────────────
+
+function renderDashboard() {
+  const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+  setEl('dash-emp-count', state.employees.length || '–');
+
+  const ok  = state.inventory.filter(i => Number(i.qty) >= Number(i.min));
+  const low = state.inventory.filter(i => Number(i.qty) <  Number(i.min));
+  setEl('dash-inv-ok', state.inventory.length ? `${ok.length}/${state.inventory.length}` : '–');
+  const lowEl = document.getElementById('dash-inv-low');
+  if (lowEl) { lowEl.textContent = low.length ? `${low.length} חסרים` : 'הכל תקין'; lowEl.className = `text-xs font-bold ${low.length ? 'text-orange-500' : 'text-green-500'}`; }
+
+  const alert = document.getElementById('inv-alert');
+  const alertItems = document.getElementById('inv-alert-items');
+  if (alert && alertItems) {
+    if (low.length) {
+      alert.classList.remove('hidden');
+      alertItems.textContent = low.map(i => `${i.id} (${i.qty}/${i.min})`).join(' · ');
+    } else { alert.classList.add('hidden'); }
+  }
+
+  const allTasks = [...state.tasks, ...state.tasksPersonal];
+  const done = allTasks.filter(t => t.checked).length;
+  setEl('dash-tasks-done', allTasks.length ? `${done}/${allTasks.length}` : '–');
+
+  const curYM = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  const reports = state.hours.filter(h => h.date && h.date.startsWith(curYM) && Number(h.sales) > 0);
+  const total = reports.reduce((s, h) => s + Number(h.sales), 0);
+  setEl('dash-sales', total > 0 ? '₪' + total.toLocaleString() : '–');
+}
+
+// ── Employees ────────────────────────────────────────────────────
+
+function setEmpLayout(l) {
+  empLayout = l;
+  ['grid','list'].forEach(m => { const b = document.getElementById(`btn-emp-${m}`); if(b) b.classList.toggle('on', m === l); });
+  renderEmployees();
+}
+
+function populateDeptFilter() {
+  const s = document.getElementById('emp-filter-dept'); if (!s) return;
+  const depts = [...new Set(state.employees.map(e => e.position))].filter(Boolean).sort();
+  s.innerHTML = '<option value="all">כל העמדות</option>';
+  depts.forEach(x => { const o = document.createElement('option'); o.value = o.textContent = x; s.appendChild(o); });
+}
+
+function renderEmployees() {
+  const grid = document.getElementById('employees-grid'); if (!grid) return;
+  const q    = (document.getElementById('emp-search')?.value || '').toLowerCase();
+  const dept = document.getElementById('emp-filter-dept')?.value || 'all';
+  grid.innerHTML = '';
+  grid.className = empLayout === 'grid'
+    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
+    : 'grid grid-cols-1 gap-2';
+
+  state.employees
+    .filter(e => {
+      const m = [e.name, e.position, e.id, e.company].some(f => String(f||'').toLowerCase().includes(q));
+      return m && (dept === 'all' || e.position === dept);
+    })
+    .forEach(e => {
+      const c = document.createElement('div');
+      c.onclick = () => openCRM(e);
+      if (empLayout === 'list') {
+        c.className = 'card cursor-pointer flex items-center gap-3 py-3 shadow-sm border-gray-100 hover:border-green-300 transition';
+        c.innerHTML = `
+          <span class="bg-green-50 text-green-700 text-sm px-2.5 py-1 rounded-lg font-black border border-green-100 flex-shrink-0">#${e.id}</span>
+          <div class="flex-grow min-w-0">
+            <div class="font-black text-gray-800 truncate">${e.name}</div>
+            <div class="text-xs text-gray-400 font-bold">${e.position}</div>
+          </div>
+          <div class="text-xs text-green-700 font-black flex-shrink-0 hidden sm:block"><i class="fa-solid fa-clock ml-1"></i>${e.startTime || '--:--'}</div>
+          ${e.phone ? `<a href="tel:${e.phone}" onclick="event.stopPropagation()" class="bg-green-600 text-white px-3 py-1.5 rounded-full font-black text-xs flex-shrink-0">חייג</a>` : ''}`;
+      } else {
+        c.className = 'card cursor-pointer hover:border-green-300 transition shadow-sm';
+        c.innerHTML = `
+          <div class="flex justify-between items-start mb-3">
+            <div><div class="font-black text-gray-800">${e.name}</div><div class="text-xs text-gray-400">${e.position}</div></div>
+            <span class="bg-green-50 text-green-700 px-2 py-1 rounded-lg font-black border border-green-100 text-sm">#${e.id}</span>
+          </div>
+          <div class="text-xs space-y-1 font-medium text-gray-500 mb-3">
+            <div><i class="fa-solid fa-clock ml-2 opacity-30"></i>${e.startTime || '--:--'}</div>
+            <div><i class="fa-solid fa-calendar ml-2 opacity-30"></i>${calculateSeniority(e.startDate)}</div>
+          </div>
+          <div class="flex justify-between items-center pt-3 border-t">
+            <span class="text-[10px] opacity-40 font-bold">${e.notes.length} הערות</span>
+            ${e.phone ? `<a href="tel:${e.phone}" onclick="event.stopPropagation()" class="text-green-600 text-lg"><i class="fa-solid fa-phone"></i></a>` : ''}
+          </div>`;
+      }
+      grid.appendChild(c);
+    });
+}
+
+function calculateSeniority(d) {
+  if (!d) return '–';
+  const s = new Date(d), n = new Date(); if (isNaN(s.getTime())) return '–';
+  let y = n.getFullYear() - s.getFullYear(), m = n.getMonth() - s.getMonth();
+  if (m < 0) { y--; m += 12; }
+  return y === 0 ? `${m} חודשים` : `${y} שנים ו-${m} ח'`;
+}
+
+// ── CRM Modal ────────────────────────────────────────────────────
+
+function openCRM(e) {
+  selectedEmp = e; toggleEditEmp(false);
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('crm-name', e.name);
+  set('crm-id-badge', '#' + e.id);
+  set('crm-val-position', e.position);
+  set('crm-val-company', e.company);
+  set('crm-val-start', e.startTime || '--:--');
+  set('crm-val-start-date', e.startDate ? new Date(e.startDate).toLocaleDateString('he-IL') : '--');
+  set('crm-val-seniority', calculateSeniority(e.startDate));
+  const modal = document.getElementById('crm-modal');
+  modal.classList.remove('hidden'); modal.classList.add('flex');
+  renderNotes();
+}
+
+function closeCRM() {
+  const modal = document.getElementById('crm-modal');
+  modal.classList.add('hidden'); modal.classList.remove('flex');
+}
+
+function toggleEditEmp(show) {
+  document.getElementById('crm-display-mode').classList.toggle('hidden', show);
+  document.getElementById('crm-edit-mode').classList.toggle('hidden', !show);
+  document.getElementById('btn-edit-emp').classList.toggle('hidden', show);
+  if (show && selectedEmp) {
+    const fields = [['edit-emp-name', 'name'], ['edit-emp-id', 'id'], ['edit-emp-pos', 'position'], ['edit-emp-company', 'company'], ['edit-emp-phone', 'phone'], ['edit-emp-start', 'startTime'], ['edit-emp-start-date', 'startDate']];
+    fields.forEach(([elId, key]) => { const el = document.getElementById(elId); if (el) el.value = selectedEmp[key] || ''; });
+  }
+}
+
+async function saveEmpEdit() {
+  const n = document.getElementById('edit-emp-name').value; if (!n) return;
+  const newEmp = {
+    ...selectedEmp,
+    name: n,
+    id:        document.getElementById('edit-emp-id').value,
+    position:  document.getElementById('edit-emp-pos').value,
+    company:   document.getElementById('edit-emp-company').value,
+    phone:     document.getElementById('edit-emp-phone').value,
+    startTime: document.getElementById('edit-emp-start').value,
+    startDate: document.getElementById('edit-emp-start-date').value,
+  };
+  showToast('שומר...');
+  try {
+    await api('saveEmployeeData', newEmp);
+    await loadData();
+    openCRM(state.employees.find(x => x.id === newEmp.id) || newEmp);
+    showToast('נשמר!', '#16a34a');
+  } catch(e) { showToast('שגיאה בשמירה', '#dc2626'); }
+}
+
+async function saveNote() {
+  const input = document.getElementById('crm-input'); if (!input?.value) return;
+  try {
+    await api('saveNoteToEmployee', { employeeId: selectedEmp.id, note: input.value });
+    selectedEmp.notes.unshift({ text: input.value, date: new Date().toLocaleString('he-IL') });
+    input.value = ''; renderNotes(); renderEmployees();
+    showToast('הערה נשמרה', '#16a34a');
+  } catch(e) { showToast('שגיאה'); }
+}
+
+function renderNotes() {
+  const h = document.getElementById('crm-history'); if (!h) return;
+  h.innerHTML = '';
+  (selectedEmp?.notes || []).forEach((n, i) => {
+    const item = document.createElement('div');
+    item.className = 'bg-gray-50 p-4 rounded-xl text-sm relative group';
+    item.innerHTML = `<p class="text-gray-700 font-medium">${n.text}</p><span class="text-[10px] opacity-40 font-bold block mt-2">${n.date}</span><button onclick="deleteNote(${i})" class="absolute left-3 top-3 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 text-xl transition">&times;</button>`;
+    h.appendChild(item);
+  });
+}
+
+async function deleteNote(idx) {
+  if (!confirm('למחוק?')) return;
+  try {
+    await api('deleteNoteFromEmployee', { empId: selectedEmp.id, noteIndex: idx });
+    selectedEmp.notes.splice(idx, 1); renderNotes(); renderEmployees();
+  } catch(e) {}
+}
+
+// ── Hours ────────────────────────────────────────────────────────
+
+async function saveHours() {
+  const dateEl  = document.getElementById('new-hours-date');
+  const hoursEl = document.getElementById('new-hours-val');
+  const salesEl = document.getElementById('new-hours-sales');
+  const date  = dateEl.value;
+  const hours = parseFloat(hoursEl.value);
+  const sales = parseFloat(salesEl.value) || 0;
+  if (!date || isNaN(hours) || hours <= 0) { showToast('נא למלא תאריך ושעות', '#f59e0b'); return; }
+  const btn = document.querySelector('#emp-panel-hours button[onclick="saveHours()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'שומר...'; }
+  try {
+    await api('saveStandardHours', { date, hours, sales });
+    const existing = state.hours.find(h => h.date === date);
+    if (existing) { existing.hours = hours; existing.sales = sales; }
+    else           { state.hours.push({ date, hours, sales }); }
+    hoursEl.value = ''; salesEl.value = '';
+    renderHoursHistory(); updateShiftCalc(); renderDashboard();
+    showToast('הדיווח נשמר', '#16a34a');
+  } catch(e) { showToast('שגיאה בשמירה', '#dc2626'); }
+  finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plus"></i> שמור דיווח'; }
+  }
+}
+
+function renderHoursHistory() {
+  const b = document.getElementById('hours-table-body'); if (!b) return;
+  b.innerHTML = '';
+  [...(state.hours || [])].filter(h => h.hours > 0).sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(h => {
+    const row = document.createElement('tr'); row.className = 'border-b hover:bg-gray-50';
+    row.innerHTML = `<td class="p-3 text-gray-500 font-bold text-sm">${h.date.split('-').reverse().join('.')}</td><td class="p-3 font-black text-center">₪${Number(h.sales).toLocaleString()}</td><td class="p-3 font-black text-green-600 text-left">${h.hours} ש'</td>`;
+    b.appendChild(row);
+  });
+}
+
+function updateShiftCalc() {
+  const count = state.employees.length || 1;
+  const active = (state.hours || []).filter(h => Number(h.hours) > 0);
+  const sorted7 = [...active].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 7);
+  const fmt = m => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}`;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+  const table = document.getElementById('shift-calc-body');
+  if (table) {
+    table.innerHTML = '';
+    sorted7.forEach(d => {
+      const mins = 6 * 60 + ((d.hours / count) * 60);
+      const row = document.createElement('tr'); row.className = 'border-b hover:bg-gray-50';
+      row.innerHTML = `<td class="p-3 text-gray-400 font-bold text-sm">${d.date.split('-').reverse().join('.')}</td><td class="p-3 text-center font-black">${d.hours} ש'</td><td class="p-3 font-black text-green-600 text-left">${fmt(mins)}</td>`;
+      table.appendChild(row);
+    });
+  }
+
+  if (sorted7.length > 0) {
+    const avgH = sorted7.reduce((s, h) => s + Number(h.hours), 0) / sorted7.length;
+    const empMins = (avgH / count) * 60;
+    set('dash-weekly-morn',  fmt(6  * 60 + empMins));
+    set('dash-weekly-night', fmt(19 * 60 + empMins));
+  }
+
+  const curYM = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+  const mReports = active.filter(h => h.date && h.date.startsWith(curYM));
+  if (mReports.length > 0) {
+    const avgH = mReports.reduce((s, h) => s + Number(h.hours), 0) / mReports.length;
+    const empMins = (avgH / count) * 60;
+    set('res-monthly-morn',  fmt(6  * 60 + empMins));
+    set('res-monthly-night', fmt(19 * 60 + empMins));
+    set('res-avg-h', avgH.toFixed(1));
+    set('res-count', count);
+  }
+}
+
+// ── Inventory ────────────────────────────────────────────────────
+
+function setInvView(mode) {
+  invView = mode;
+  ['grid','list'].forEach(m => { const b = document.getElementById(`inv-btn-${m}`); if (b) b.classList.toggle('on', m === mode); });
+  renderInventory();
+}
+
+function setOrdView(mode) {
+  ordView = mode;
+  ['grid','list'].forEach(m => { const b = document.getElementById(`ord-btn-${m}`); if (b) b.classList.toggle('on', m === mode); });
+  renderOrders();
+}
+
+function toggleEditMin() {
+  editMinMode = !editMinMode;
+  const btn = document.getElementById('btn-edit-min');
+  if (btn) btn.className = editMinMode
+    ? 'bg-green-600 text-white border px-3 py-2 rounded-xl font-bold text-sm'
+    : 'bg-white border px-3 py-2 rounded-xl font-bold text-gray-600 text-sm';
+  renderInventory();
+}
+
+function renderInventory() {
+  const g = document.getElementById('inventory-grid'); if (!g) return;
+  g.innerHTML = '';
+  g.className = invView === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 gap-3' : '';
+
+  state.inventory.forEach(i => {
+    const low = Number(i.qty) < Number(i.min);
+    const c = document.createElement('div');
+    if (invView === 'grid') {
+      c.className = `card shadow-sm ${low ? 'border-orange-300 bg-orange-50' : 'border-gray-100'}`;
+      c.innerHTML = `
+        <div class="flex justify-between items-center mb-3">
+          <h4 class="font-black text-gray-800">${i.id}</h4>
+          <span class="text-[10px] px-2 py-1 rounded-lg font-black ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span>
+        </div>
+        <div class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600">
+          <span>מלאי נוכחי:</span>
+          <input type="number" value="${i.qty}" oninput="updateInv('${i.id}',this.value,undefined)"
+            class="w-20 p-1 border rounded-lg font-black text-green-700 bg-white text-center">
+        </div>
+        <div class="flex items-center justify-between gap-2 text-xs mt-3 font-bold ${editMinMode ? '' : 'opacity-40'}">
+          <span>מינימום:</span>
+          <input type="number" value="${i.min}" oninput="updateInv('${i.id}',undefined,this.value)"
+            ${editMinMode ? '' : 'disabled'}
+            class="w-20 p-1 border rounded-lg text-center ${editMinMode ? 'border-green-400 text-green-700' : ''}">
+        </div>`;
+    } else {
+      c.className = `list-row${low ? ' low-row' : ''}`;
+      const minCell = editMinMode
+        ? `<input type="number" value="${i.min}" oninput="updateInv('${i.id}',undefined,this.value)"
+            class="w-14 p-1 border-2 border-green-400 rounded-lg text-center text-sm font-black text-green-700 bg-white">`
+        : `<span class="font-black">${i.min}</span>`;
+      c.innerHTML = `
+        <div class="list-row-name">${i.id}
+          <span class="text-[10px] px-1.5 py-0.5 rounded font-black mr-1 ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span>
+        </div>
+        <div class="list-row-stats"><span class="text-gray-400 text-[10px] block">מלאי</span><span class="${low ? 'text-orange-600' : ''} font-black">${i.qty}</span></div>
+        <div class="list-row-stats"><span class="text-gray-400 text-[10px] block">מינימום</span>${minCell}</div>
+        ${editMinMode ? '' : `<input type="number" value="${i.qty}" oninput="updateInv('${i.id}',this.value,undefined)"
+          class="w-16 p-1 border rounded-lg font-black text-green-700 bg-white text-center text-sm">`}`;
+    }
+    g.appendChild(c);
+  });
+}
+
+async function updateInv(id, q, m) {
+  const i = state.inventory.find(x => x.id === id); if (!i) return;
+  if (q !== undefined) i.qty = q;
+  if (m !== undefined) i.min = m;
+  renderInventory(); renderOrders();
+  await api('updateInventory', { id: i.id, qty: i.qty, min: i.min });
+}
+
+function renderOrders() {
+  const g = document.getElementById('orders-grid'); if (!g) return;
+  g.innerHTML = '';
+  g.className = ordView === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3' : '';
+
+  orders.forEach(o => {
+    const inv   = o.orderOnly ? null : (state.inventory.find(i => i.id === o.id) || { qty: 0, min: 0 });
+    const cur   = inv ? (Number(inv.qty) || 0) : null;
+    const min   = inv ? (Number(inv.min) || 0) : null;
+    const ord   = Number(o.amountToOrder) || 0;
+    const after = cur !== null ? cur + ord : null;
+    const low   = cur !== null && min !== null && cur < min;
+    const okAfter = after !== null && min !== null && after >= min;
+    const sid   = o.id.replace(/['"]/g, '');
+
+    const isMushroom = o.id === 'פטריות';
+    const counter = `<div class="oc">
+      <button class="oc-btn oc-minus" onclick="adjustOrder('${sid}',-1)" style="${isMushroom ? 'font-size:11px;font-weight:900;' : ''}">−${isMushroom ? '50' : ''}</button>
+      <input class="oc-input" id="order-input-${sid}" type="number" value="${o.amountToOrder || 0}" oninput="updateOrderAmount('${sid}',this.value)" min="0" step="${isMushroom ? 50 : 1}">
+      <button class="oc-btn oc-plus"  onclick="adjustOrder('${sid}', 1)" style="${isMushroom ? 'font-size:11px;font-weight:900;' : ''}">+${isMushroom ? '50' : ''}</button>
+    </div>`;
+
+    const statsHtml = o.orderOnly ? '' : `
+      <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+        <span>מלאי כעת:</span><span class="font-black ${low ? 'text-orange-600' : 'text-gray-700'}">${cur}</span>
+      </div>
+      <div class="flex justify-between text-xs font-bold text-gray-500 mb-3">
+        <span>אחרי הזמנה:</span><span id="after-${o.id}" class="font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}">${after}</span>
+      </div>`;
+
+    const c = document.createElement('div');
+    if (ordView === 'grid') {
+      c.className = `card ${low ? 'bg-orange-50 border-orange-200' : 'border-gray-100 shadow-sm'}`;
+      c.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-black text-gray-800 text-sm">${o.id}</h4>
+          ${low ? '<span class="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black">חסר</span>' : ''}
+        </div>${statsHtml}${counter}`;
+    } else {
+      c.className = `list-row${low ? ' low-row' : ''}`;
+      c.innerHTML = `
+        <div class="list-row-name">${o.id}</div>
+        ${o.orderOnly ? '' : `
+        <div class="list-row-stats"><span class="text-gray-400 text-[10px] block">כעת</span><span class="${low ? 'text-orange-600' : ''} font-black">${cur}</span></div>
+        <div class="list-row-stats"><span class="text-gray-400 text-[10px] block">אחרי</span><span id="after-${o.id}" class="font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}">${after}</span></div>`}
+        ${counter}`;
+    }
+    g.appendChild(c);
+  });
+}
+
+function adjustOrder(id, delta) {
+  const o = orders.find(x => x.id === id); if (!o) return;
+  const step = id === 'פטריות' ? 50 * Math.sign(delta) : delta;
+  const v = Math.max(0, (Number(o.amountToOrder) || 0) + step);
+  o.amountToOrder = v;
+  const input = document.getElementById('order-input-' + id);
+  if (input) input.value = v;
+  updateOrderAmount(id, v);
+}
+
+function updateOrderAmount(id, val) {
+  const o = orders.find(x => x.id === id); if (!o) return;
+  o.amountToOrder = val;
+  const inv = state.inventory.find(i => i.id === id) || { qty: 0, min: 0 };
+  const after = (Number(inv.qty) || 0) + (Number(val) || 0);
+  const okAfter = after >= (Number(inv.min) || 0);
+  const el = document.getElementById(`after-${id}`);
+  if (el) { el.textContent = after; el.className = `font-black ${okAfter ? 'text-green-600' : 'text-orange-500'}`; }
+}
+
+function sendOrderToEliyahu() {
+  const toSend = orders.filter(o => Number(o.amountToOrder) > 0);
+  if (!toSend.length) return showToast('לא הוזנו כמויות', '#dc2626');
+  const today = new Date();
+  const daysAhead = today.getDay() === 4 ? 3 : 1; // יום ה' → ראשון (+3), אחרת מחר (+1)
+  const delivery = new Date(today); delivery.setDate(today.getDate() + daysAhead);
+  const date = delivery.toLocaleDateString('he-IL');
+  let text = `*הזמנת ירקות מחלקת קישים*\nתאריך: ${date}\n\n`;
+  toSend.forEach(o => text += `${o.id}: ${o.amountToOrder}\n\n`);
+  window.open(`https://wa.me/972524048099?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function clearOrders() {
+  if (!confirm('לנקות את ההזמנה?')) return;
+  orders.forEach(o => o.amountToOrder = '');
+  renderOrders();
+}
+
+function shareWorkerApp() {
+  const url = 'https://giladshai-blip.github.io/BISSCOTI-manager/html/%D7%A2%D7%95%D7%91%D7%93-%D7%9E%D7%9C%D7%90%D7%99.html';
+  if (navigator.share) {
+    navigator.share({ title: 'ספירת מלאי ירקות', url });
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent('אפליקציית ספירת מלאי ירקות:\n' + url)}`, '_blank');
+  }
+}
+
+async function syncFromWorker() {
+  const icon = document.getElementById('sync-worker-icon');
+  const btn  = document.getElementById('btn-sync-worker');
+  const st   = document.getElementById('sync-worker-status');
+  if (icon) icon.classList.add('animate-spin');
+  if (btn) btn.disabled = true;
+  if (st) { st.className = 'mb-4 p-3 rounded-xl text-sm font-bold text-center bg-blue-50 text-blue-700'; st.textContent = 'מסנכרן...'; }
+  try {
+    const res = await api('syncFromYerakot');
+    if (st) { st.className = 'mb-4 p-3 rounded-xl text-sm font-bold text-center bg-green-50 text-green-700'; st.textContent = `✓ ${res.updated} פריטים עודכנו`; }
+    await loadData();
+    setTimeout(() => { if (st) st.className = 'hidden'; }, 4000);
+  } catch(e) {
+    if (st) { st.className = 'mb-4 p-3 rounded-xl text-sm font-bold text-center bg-red-50 text-red-700'; st.textContent = 'שגיאה בסנכרון'; }
+  }
+  if (icon) icon.classList.remove('animate-spin');
+  if (btn) btn.disabled = false;
+}
+
+// ── Tasks ────────────────────────────────────────────────────────
+
+function showTasksTab(tab) {
+  ['david', 'personal'].forEach(t => {
+    document.getElementById(`tasks-panel-${t}`).classList.toggle('hidden', t !== tab);
+    document.getElementById(`tasks-tab-${t}`).classList.toggle('active', t === tab);
+  });
+}
+
+function renderTasks() {
+  renderTasksPanel('david');
+  renderTasksPanel('personal');
+}
+
+function renderTasksPanel(type) {
+  const tasks = type === 'david' ? state.tasks : state.tasksPersonal;
+  const g = document.getElementById(`tasks-grid-${type}`); if (!g) return;
+  g.innerHTML = '';
+  const dateEl = document.getElementById(`tasks-date-${type}`);
+  if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
+
+  tasks.forEach(t => {
+    const c = document.createElement('div');
+    c.className = `card flex items-center gap-4 shadow-sm border-gray-100 ${t.checked ? 'opacity-40 bg-gray-50' : ''}`;
+    c.innerHTML = `
+      <input type="checkbox" ${t.checked ? 'checked' : ''} onchange="toggleTask('${type}',${t.id})" class="w-7 h-7 rounded-lg flex-shrink-0" style="accent-color:#16a34a;">
+      <div class="flex-grow font-black text-gray-800 ${t.checked ? 'line-through' : ''}">${t.name}</div>
+      ${t.noCounter ? '' : `<input type="number" value="${t.done || 0}" oninput="updateTaskDone('${type}',${t.id},this.value)" class="w-16 p-2 text-center border rounded-lg font-black text-green-700">`}`;
+    g.appendChild(c);
+  });
+}
+
+async function addTask(type) {
+  const input = document.getElementById(`new-task-${type}`);
+  const name = input.value.trim();
+  if (!name) return;
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
+  const newTask = { id: Date.now(), name, done: 0, checked: false, noCounter: true };
+  list.push(newTask);
+  input.value = '';
+  renderTasksPanel(type); renderDashboard();
+  try {
+    const action = type === 'david' ? 'updateTask' : 'updateTaskPersonal';
+    await api(action, { name, done: 0 });
+  } catch(e) { showToast('שגיאה בשמירה', '#dc2626'); }
+}
+
+async function toggleTask(type, id) {
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
+  const t = list.find(x => x.id === id); if (!t) return;
+  t.checked = !t.checked; renderTasksPanel(type); renderDashboard();
+  await api(type === 'david' ? 'updateTask' : 'updateTaskPersonal', t);
+}
+
+async function updateTaskDone(type, id, v) {
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
+  const t = list.find(x => x.id === id); if (!t) return;
+  t.done = Number(v); t.checked = t.done > 0; renderTasksPanel(type); renderDashboard();
+  await api(type === 'david' ? 'updateTask' : 'updateTaskPersonal', t);
+}
+
+async function resetTasks(type) {
+  if (!confirm('לאפס את כל המשימות ל-0?')) return;
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
+  try {
+    await api(type === 'david' ? 'resetAllTasks' : 'resetAllTasksPersonal');
+    list.forEach(t => { t.done = 0; t.checked = false; });
+    renderTasksPanel(type); renderDashboard();
+    showToast('משימות אופסו', '#1d4ed8');
+  } catch(e) {}
+}
+
+function sendTasks(type) {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const dateInput = document.getElementById(`tasks-date-${type}`);
+  const picked = dateInput?.value ? new Date(dateInput.value) : now;
+  const dateStr = picked.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const list = type === 'david' ? state.tasks : state.tasksPersonal;
+  const title = type === 'david' ? 'משימות יומיות' : 'משימות אישיות';
+  const checked = list.filter(t => t.checked);
+  if (!checked.length) return showToast('אין משימות מסומנות', '#f59e0b');
+  let text = `*${title}*\nתאריך: ${dateStr} | ${timeStr}\n\n`;
+  checked.forEach(t => text += `✅ ${t.name}${!t.noCounter && t.done > 0 ? ': ' + t.done : ''}\n\n`);
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+
+window.onload = () => {
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('display-date');
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const newHoursDate = document.getElementById('new-hours-date');
+  if (newHoursDate) newHoursDate.value = today;
+
+  // CRM swipe-down to close
+  const modal = document.getElementById('crm-modal');
+  if (modal) {
+    let ty = 0;
+    modal.addEventListener('touchstart', e => { ty = e.touches[0].clientY; }, { passive: true });
+    modal.addEventListener('touchend',   e => { if (e.changedTouches[0].clientY - ty > 100) closeCRM(); });
+  }
+
+  loadData();
+  setInterval(loadData, 90000);
+};
+</script>
+</body>
+</html>
