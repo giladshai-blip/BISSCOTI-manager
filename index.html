@@ -820,7 +820,7 @@ async function loadData() {
     const FIXED_DAVID_TASKS = ['כרובית על מגש'];
     FIXED_DAVID_TASKS.forEach(name => {
       if (!state.tasks.find(t => t.name === name))
-        state.tasks.push({ id: Date.now() + Math.random(), name, done: 0, checked: false, noCounter: true });
+        state.tasks.push({ id: Date.now() + Math.random(), name, done: 0, checked: false });
     });
 
     const invMap = new Map();
